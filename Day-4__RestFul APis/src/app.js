@@ -5,6 +5,7 @@
 
 const express = require('express');
 const app = express();
+// Add middleware to parse JSON bodies ie to read req.body
 app.use(express.json()); 
 
 const notes=[];
