@@ -13,7 +13,7 @@ function App() {
   }, [])
 
   const fetchNotes = () => {
-    axios.get('http://localhost:3000/api/notes')
+    axios.get('https://node-js-lxpr.onrender.com//api/notes')
       .then((res) => setPost(res.data))
       .catch((err) => console.log(err))
   }
@@ -22,7 +22,7 @@ function App() {
     e.preventDefault()
 
     // POST request to create a new note
-    axios.post('http://localhost:3000/api/notes', {
+    axios.post('https://node-js-lxpr.onrender.com//api/notes', {
       title: title,
       description: description
     })
@@ -38,7 +38,7 @@ function App() {
   }
   const deleteNote = (id) => {
     // DELETE request to delete a note
-    axios.delete(`http://localhost:3000/api/notes/${id}`)
+    axios.delete(`https://node-js-lxpr.onrender.com//api/notes/${id}`)
       .then((res) => {
         console.log(res.data)
         // Refresh the notes list
@@ -61,7 +61,7 @@ function App() {
       return;
     }
     // PUT request to update a note
-    axios.patch(`http://localhost:3000/api/notes/${id}`, {
+    axios.patch(`https://node-js-lxpr.onrender.com//api/notes/${id}`, {
       title: newTitle,
       description: newDescription
     })
