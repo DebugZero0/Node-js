@@ -1,0 +1,23 @@
+{
+  "name": "day-10__genai",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@langchain/core": "^1.1.48",
+    "@langchain/mistralai": "^1.1.0",
+    "@tavily/core": "^0.7.3",
+    "dotenv": "^17.4.2",
+    "langchain": "^1.4.2",
+    "nodemailer": "^8.0.10",
+    "zod": "^4.4.3"
+  }
+}
