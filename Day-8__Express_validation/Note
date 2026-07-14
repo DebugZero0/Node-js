@@ -1,0 +1,14 @@
+In package.json, 
+The "type" field has been changed from "commonjs" to "module". This indicates that the project is now using import/export syntax instead of require/module.exports. This change allows for better support of ES modules in Node.js.
+
+Express server handles error but the response of that error is in HTML format. To change the response format to JSON, we can create a custom error-handling middleware function. This function will catch any errors that occur in the application and send a JSON response instead of an HTML page.
+
+use app.use(handleError); // Error handling middleware.. at end of all routes and middlewares in app.js file. This will ensure that any errors that occur in the routes or other middlewares will be caught by the handleError middleware
+
+Drawback of using dotenv using import ==> process.env variable can be used only where dotenv.config() is called.
+Also dotenv.config() should be called before using any environment variables in the code.
+
+
+To perform Validation in Express we use express-validator library.
+we give an array of validation rules because we want to validate the incoming request data before it reaches the controller function.
+
