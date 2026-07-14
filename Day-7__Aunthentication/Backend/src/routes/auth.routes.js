@@ -36,9 +36,25 @@ authRouter.post('/register', async(req, res) => {
     }
 });
 
-authRouter.post('/protected', async(req, res) => {
-    console.log(req.cookies); // Log the cookies to see if the token is being sent correctly
-    res.status(200).json({message: 'This is a protected route', cookies: req.cookies});
+authRouter.get('/get-me', async(req, res) => {
+    try {
+        // Extracting the token from cookies
+        const token = req.cookies.jwt_token;
+        if(!token){
+            return res.status(401).json({message: 'No token provided'});
+        }
+        // Verifying the token and extracting user ID
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const userId = decoded.id;
+        // Fetching the user details from the database using the extracted user ID
+        const user = await userModel.findById(userId);
+        if(!user){
+            return res.status(404).json({message: 'User not found'});
+        }
+        res.status(200).json({message: 'User details fetched successfully', user});
+    } catch (err) {
+        res.status(500).json({message: 'Error fetching user details', error: err.message});
+    }
 });
 
 authRouter.post('/login', async(req, res) => {
