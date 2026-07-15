@@ -11,7 +11,7 @@ const refreshClient = axios.create({
     baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
     withCredentials: true,
 })
-
+// Interceptor for adding authorization header
 api.interceptors.request.use((config) => {
     const accessToken = store.getState().auth.accessToken
     if (accessToken) {
@@ -21,7 +21,7 @@ api.interceptors.request.use((config) => {
 
     return config
 })
-
+// Interceptor for handling 401 errors and refreshing the access token
 api.interceptors.response.use(
     (response) => response,
     async (error) => {

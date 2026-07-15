@@ -25,6 +25,14 @@ function refreshCookieOptions() {
         maxAge: 3 * 24 * 60 * 60 * 1000,
     };
 }
+function accessTokenOptions() {
+    return {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: isProduction,
+        maxAge: 15 * 60 * 1000,
+    };
+}
 
 export const register = async (req, res) => {
     const { username, email, password } = req.body;
@@ -86,22 +94,18 @@ export const login = async (req, res) => {
         user.refreshToken = refreshToken;
         await user.save();
 
-        res.cookie("accessToken", accessToken, {
-            httpOnly: true,
-            sameSite: "lax",
-            secure: isProduction,
-            maxAge: 15 * 60 * 1000, // 15 min
-        });
+        res.cookie("accessToken", accessToken, accessTokenOptions());
 
         res.cookie("refreshToken", refreshToken, refreshCookieOptions());
         res.status(200).json({ accessToken, user: { id: user._id, username: user.username, email: user.email } });
     } catch (error) {
         console.error("Error logging in user:", error);
-        res.status(500).json({ message: "Server error", success: false });
+        res.status(500).json({ message: error.message, success: false });
     }
 };
 
-export const refresh = async (req, res) => {
+// bug - if the refresh token is invalid or expired, the user should be logged out and redirected to the login page. This can be handled on the frontend by checking the response from this endpoint and clearing the user's session if necessary.
+export const refresh = async (req, res) => { 
     const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
@@ -196,6 +200,6 @@ export const logOut = async (req, res) => {
         res.status(200).json({ message: "Logged out successfully", success: true });
     } catch (error) {
         console.error("Error logging out user:", error);
-        res.status(500).json({ message: "Server error", success: false });
+        res.status(500).json({ message: error.message, success: false });
     }
 };

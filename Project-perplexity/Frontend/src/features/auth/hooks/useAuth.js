@@ -1,6 +1,7 @@
-import { useDispatch } from 'react-redux'
+import { useDispatch } from 'react-redux' // Importing the useDispatch hook from react-redux to dispatch actions to the Redux store.
 import { register, login, refresh, getMe } from '../services/auth.api.js'
-import { setUser, setAccessToken, setLoading, setError } from '../auth.slice.js'
+import { setUser, setAccessToken, setLoading, setError,} from '../auth.slice.js'
+import { api } from '../../../app/api.client.js'
 
 export function useAuth() {
     const dispatch = useDispatch()
@@ -33,7 +34,8 @@ export function useAuth() {
         }
     }
 
-    async function handleRefresh() {
+    // This function is responsible for refreshing the user's access token.
+    async function handleRefresh() { 
         dispatch(setLoading(true))
         try {
             const data = await refresh()
@@ -51,6 +53,7 @@ export function useAuth() {
         }
     }
 
+    // This function is responsible for fetching the current user's information.
     async function handleGetMe() {
         dispatch(setLoading(true))
         try {
@@ -65,11 +68,21 @@ export function useAuth() {
             dispatch(setLoading(false))
         }
     }
-
+    // This function is responsible for logging out the user.And it clears the access token and user information from the Redux store.
     async function handleLogout() {
-        dispatch(setAccessToken(null))
-        dispatch(setUser(null))
-        dispatch(setError(null))
+        dispatch(setLoading(true))
+        try {
+            await api.post("/api/auth/logout") 
+            // why not use logout() from auth.api.js? Because we want to handle the logout process directly here, including clearing the Redux store.
+            dispatch(setAccessToken(null))
+            dispatch(setUser(null))
+            dispatch(setError(null))
+        } catch (error) {
+            dispatch(setError(error.response?.data?.message || error.message))
+            throw error
+        } finally {
+            dispatch(setLoading(false))
+        }
     }
 
     return { handleRegister, handleLogin, handleRefresh, handleGetMe, handleLogout }

@@ -4,6 +4,7 @@ import { useChat } from "../hooks/useChat"
 import { createPortal } from "react-dom"
 import TypingIndicator from "../components/TypingIndicator"
 import { Send } from "lucide-react"
+import {useAuth} from "../../auth/hooks/useAuth" 
 
 const DELAYS = ["delay-0", "delay-75", "delay-100", "delay-150", "delay-200", "delay-300", "delay-500"]
 
@@ -280,6 +281,55 @@ function EditIcon({ className }) {
     </svg>
   )
 }
+function LogoutIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M10 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 8l5 4-5 4"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M9 12h10"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function EditIcon2({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <rect
+        x="3.5"
+        y="3.5"
+        width="17"
+        height="17"
+        rx="3"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d="M8 16.5l1-.2 6.7-6.7a1.4 1.4 0 0 0 0-2l-.3-.3a1.4 1.4 0 0 0-2 0L6.7 14l-.2 1.5L8 16.5Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 function CopyIcon({ className }) {
   return (
@@ -451,6 +501,9 @@ const Dashboard = () => {
   const [mounted, setMounted] = useState(false)
   const [scrollState, setScrollState] = useState({ top: 0, atBottom: true })
   const [menuPosition, setMenuPosition] = useState(null)
+  const [showUserInfo, setShowUserInfo] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const { handleLogout } = useAuth()
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
@@ -568,6 +621,17 @@ const Dashboard = () => {
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [infoOpen])
+
+  useEffect(() => {
+    if (!showUserInfo) return
+
+    // Close the user info panel when the Escape key is pressed or when clicking outside of it
+    function handleKeyDown(event) {
+      if (event.key === "Escape") setShowUserInfo(false)
+    }
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [showUserInfo])
 
   useEffect(() => {
     function handlePointerDown(event) {
@@ -1067,9 +1131,16 @@ const Dashboard = () => {
             }`}
         >
           <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-            <GlassAvatar label={userInitial} />
+            <button
+              type="button"
+              onClick={() => setShowUserInfo(true)} // open the user info feature
+              aria-label="Show user information"
+              className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-zinc-500 transition-colors duration-150 hover:text-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+            >
+              <GlassAvatar label={userInitial} />
+            </button>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">{userLabel}</p> 
+              <p className="truncate text-sm font-medium text-white">{userLabel}</p>
               <p className="truncate text-xs text-zinc-500">{user?.email || "Free plan"}</p>
             </div>
           </div>
@@ -1206,9 +1277,9 @@ const Dashboard = () => {
                 )}
 
               </div>
-              <div className="relative bottom-0 left-0 right-0 z-20 flex flex-shrink-0 justify-center px-3 py-3 sm:px-6 sm:py-4 lg:px-8">
+              <div className="relative bottom-0 left-0 right-0 z-20 flex flex-shrink-0 justify-center px-3 py-3 sm:px-6 sm:py-4 lg:px-8 backdrop-blur-3xl">
                 <form onSubmit={handleSendMessage} className="w-full max-w-lg rounded-2xl  p-3">
-                  <div className="flex items-center gap-2 bg-black px-3 py-2.5 rounded-2xl">
+                  <div className="flex items-center gap-2 bg-[#131316] px-3 py-1.5 rounded-2xl">
                     <textarea
                       ref={inputRef}
                       value={inputValue}
@@ -1218,7 +1289,7 @@ const Dashboard = () => {
                       }}
                       rows={1}
                       placeholder="Ask something or start a new chat..."
-                      className="min-h-12 flex-1 resize-none overflow-hidden rounded-xl  bg-black/30 px-4 py-3 text-sm leading-6 text-white outline-none placeholder:text-zinc-600 transition-colors duration-150 scrollbar-thumb-zinc-700 scrollbar-track-transparent scrollbar-thin"
+                      className="min-h-12 flex-1 resize-none overflow-hidden rounded-xl  bg-[#131316] px-4 py-3 text-sm leading-6 text-white outline-none placeholder:text-zinc-600 transition-colors duration-150 scrollbar-thumb-zinc-700 scrollbar-track-transparent scrollbar-thin"
                     />
                     <button
                       type="submit"
@@ -1288,6 +1359,108 @@ const Dashboard = () => {
                   <li>• Delete chats when you want to clear a conversation.</li>
                 </ul>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {showUserInfo ? (
+        <div
+          className="fixed inset-0 z-[65] flex items-center justify-center bg-black/60 px-4 backdrop-blur-md"
+          onClick={() => setShowUserInfo(false)}
+          aria-hidden="true"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="user-info-title"
+            className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0d0d0f] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">User Information</p>
+                <h3 id="user-info-title" className="mt-1 text-2xl font-semibold text-white">
+                  {userLabel}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUserInfo(false)}
+                aria-label="Close user information"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-zinc-400 transition-colors duration-150 hover:border-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+              >
+                <CloseIcon className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-5 space-y-4 text-sm leading-6 text-zinc-400">
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+                <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">Email</p>
+                <p className="mt-2 text-base font-semibold text-white">{user?.email || "N/A"}</p>
+              </div>
+              <div className=" p-4 flex justify-around gap-3 ">
+                <button type="button"
+                title="Edit details"
+                  onClick={() => {
+                    // Handle account edit logic here
+                    console.log("Edit account clicked");
+                  }}
+                  className="mt-4 rounded-full px-5 py-3 text-sm font-semibold text-white transition-all duration-150 brightness-50 focus:outline-none hover:brightness-100  flex items-center justify-center gap-4 active:scale-97"
+                >
+                  <EditIcon2 className="h-5 w-5 ml-2" />
+                </button>
+                <button type="button"
+                  title="Logout"
+                  onClick={() => {
+                    setShowLogoutConfirm(true);
+                  }}
+                  className="mt-4 rounded-full px-5 py-3 text-sm font-semibold text-white transition-all duration-150 focus:outline-none brightness-50 hover:brightness-100  flex items-center justify-center gap-4 active:scale-97"
+                >
+                  <LogoutIcon className="h-5 w-5 ml-2" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {showLogoutConfirm ? (
+        <div
+          className="fixed inset-0 z-[65] flex items-center justify-center bg-black/60 px-4 backdrop-blur-md"
+          onClick={() => setShowLogoutConfirm(false)}
+          aria-hidden="true"
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-confirm-title"
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d0d0f] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">Confirm Logout</p>
+                <h3 id="logout-confirm-title" className="mt-1 text-xl font-semibold text-white">
+                  Are you sure you want to logout?
+                </h3>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.07] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-rose-500/50 px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-rose-400/50 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+              >
+                Logout
+              </button>
             </div>
           </div>
         </div>
