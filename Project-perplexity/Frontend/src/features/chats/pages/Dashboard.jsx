@@ -5,6 +5,8 @@ import { createPortal } from "react-dom"
 import TypingIndicator from "../components/TypingIndicator"
 import { Send } from "lucide-react"
 import {useAuth} from "../../auth/hooks/useAuth" 
+import { useUser } from "../hooks/useUser"
+
 
 const DELAYS = ["delay-0", "delay-75", "delay-100", "delay-150", "delay-200", "delay-300", "delay-500"]
 
@@ -480,6 +482,8 @@ function formatMessageActionTime(timestamp) {
 
 const Dashboard = () => {
   const { initializeSocketConnection, deleteChat, getChats, getMessages, sendMessage, updateChatTitle } = useChat()
+  const { handleLogout } = useAuth()
+  const { updateUserName } = useUser()
   const user = useSelector((state) => state.auth.user)
   const [chats, setChats] = useState([])
   const [messages, setMessages] = useState([])
@@ -503,7 +507,9 @@ const Dashboard = () => {
   const [menuPosition, setMenuPosition] = useState(null)
   const [showUserInfo, setShowUserInfo] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const { handleLogout } = useAuth()
+  const [editingUserName, setEditingUserName] = useState(false)
+  const [newUserName, setNewUserName] = useState("")
+  const [savingUserName, setSavingUserName] = useState(false)
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
@@ -874,6 +880,44 @@ const Dashboard = () => {
     }
   }
 
+  function startEditUserName() {
+    setNewUserName(user?.username || user?.name || "")
+    setEditingUserName(true)
+  }
+
+  async function handleUpdateUserName(event) {
+    event.preventDefault()
+
+    const trimmedName = newUserName.trim()
+    if (!trimmedName) {
+      setError("User name cannot be empty")
+      return
+    }
+
+    if (trimmedName === (user?.username || user?.name)) {
+      setEditingUserName(false)
+      return
+    }
+
+    setSavingUserName(true)
+    setError("")
+
+    try {
+      await updateUserName(trimmedName)
+      setEditingUserName(false)
+    } catch (updateError) {
+      setError(updateError.response?.data?.error || "Failed to update name")
+    } finally {
+      setSavingUserName(false)
+    }
+  }
+
+  function handleCancelEditUserName() {
+    if (savingUserName) return
+    setNewUserName(user?.username || user?.name || "")
+    setEditingUserName(false)
+  }
+
   const sidebarChats = chats
   const pendingDeleteChat = pendingDeleteChatId
     ? chats.find((item) => item._id === pendingDeleteChatId) || null
@@ -1221,8 +1265,8 @@ const Dashboard = () => {
                           >
                             <div
                               className={`max-w-full rounded-2xl border px-4 py-3 ${isUserMessage
-                                ? "border-white/[0.08] bg-white/[0.06] text-zinc-100"
-                                : "border-transparent bg-transparent text-zinc-100"
+                                ? "border-transparent bg-white/[0.06] text-zinc-100"
+                                : "border-transparent bg-black/5 text-zinc-100"
                                 }`}
                             >
                               {isUserMessage ? (
@@ -1401,12 +1445,9 @@ const Dashboard = () => {
               </div>
               <div className=" p-4 flex justify-around gap-3 ">
                 <button type="button"
-                title="Edit details"
-                  onClick={() => {
-                    // Handle account edit logic here
-                    console.log("Edit account clicked");
-                  }}
-                  className="mt-4 rounded-full px-5 py-3 text-sm font-semibold text-white transition-all duration-150 brightness-50 focus:outline-none hover:brightness-100  flex items-center justify-center gap-4 active:scale-97"
+                  title="Edit details"
+                  onClick={startEditUserName}
+                  className="mt-4 rounded-full px-5 py-3 text-sm font-semibold text-white transition-all duration-150 brightness-50 focus:outline-none hover:brightness-100 flex items-center justify-center gap-4 active:scale-97"
                 >
                   <EditIcon2 className="h-5 w-5 ml-2" />
                 </button>
@@ -1568,6 +1609,64 @@ const Dashboard = () => {
           </div>
         </div>
       ) : null}
+
+      {editingUserName ? (
+        <div className="fixed inset-0 z-[72] flex items-center justify-center bg-black/60 px-4 backdrop-blur-md" onClick={handleCancelEditUserName}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-username-title"
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d0d0f] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">Edit your name</p>
+                <h3 id="edit-username-title" className="mt-1 text-xl font-semibold text-white">
+                  Update your name
+                </h3>
+              </div>
+            </div>
+
+            <form onSubmit={handleUpdateUserName} className="space-y-4">
+              <div>
+                <label htmlFor="username-input" className="mb-2 block text-sm text-zinc-400">
+                  New Name
+                </label>
+                <input
+                  id="username-input"
+                  type="text"
+                  value={newUserName}
+                  onChange={(event) => setNewUserName(event.target.value)}
+                  autoFocus
+                  disabled={savingUserName}
+                  className="w-full rounded-xl border border-white/[0.08] bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-white/25 focus:ring-2 focus:ring-white/10 disabled:opacity-50"
+                  placeholder="Enter your new name"
+                />
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleCancelEditUserName}
+                  disabled={savingUserName}
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.07] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingUserName || !newUserName.trim()}
+                  className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-black transition-all duration-150 hover:bg-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+                >
+                  {savingUserName ? "Saving..." : "Update"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
     </main>
   )
 }

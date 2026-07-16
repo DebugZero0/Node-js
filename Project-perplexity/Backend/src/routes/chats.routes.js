@@ -4,6 +4,7 @@ import { authUser } from '../middlewire/auth.middlewire.js';
 
 const chatsRoutes = Router();
 
+// Full route: /api/chats/message
 chatsRoutes.post('/message', authUser, sendMessage);
 chatsRoutes.get('/', authUser, getChats);
 chatsRoutes.get('/:chatId/messages', authUser, getMessages);

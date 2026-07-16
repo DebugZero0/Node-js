@@ -2,6 +2,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
 import chatsRoutes from "./routes/chats.routes.js";
+import userRouts from "./routes/user.routes.js";
 import morgan from "morgan";
 import cors from "cors";
 
@@ -40,6 +41,7 @@ app.options(/.*/, cors(corsOptions));
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/chats", chatsRoutes);
+app.use("/api/user", userRouts);
 
 app.get("/", (req, res) => {
     res.send("Hello World");
