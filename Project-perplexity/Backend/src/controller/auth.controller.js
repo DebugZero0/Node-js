@@ -1,6 +1,6 @@
 import User from "../models/user.model.js";
 import jwt from "jsonwebtoken";
-import { sendEmail } from "../services/mail.service.js";
+import { sendEmail, sendEmailMailjet } from "../services/mail.service.js";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -52,16 +52,92 @@ export const register = async (req, res) => {
         // Generate a JWT token
         const emailVerificationToken = jwt.sign({ email: newUser.email }, process.env.JWT_SECRET, { expiresIn: "1d" });
         // Send a welcome email
-        await sendEmail(
-            newUser.email,
-            "Welcome to Perplexity",
-            `<h1>Welcome ${newUser.username}</h1>
-                <p>Thank you for registering at Perplexity. We're excited to have you on board!</p>
-                <p>To get started, please verify your email address by clicking the link below:</p>
-                <a href="${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}">Verify Email</a>
-                <p>If you did not create an account, please ignore this email.</p>
-                <p>Best regards,<br/>The Perplexity Team</p>`
-        );
+        if (isProduction) {
+            await sendEmailMailjet(
+                newUser.email,
+                "Welcome to Our App!",
+                `<div style="margin:0;padding:0;background-color:#f7f7f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f7f5;padding:40px 0;">
+                    <tr>
+                    <td align="center">
+                        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+                        <tr>
+                            <td style="padding:40px 40px 24px 40px;text-align:center;border-bottom:1px solid #eeeeee;">
+                            <div style="width:40px;height:40px;background-color:#1f1f1f;border-radius:10px;margin:0 auto 16px auto;"></div>
+                            <h1 style="margin:0;font-size:20px;font-weight:600;color:#1f1f1f;letter-spacing:-0.3px;">Welcome to Our App!</h1>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:32px 40px;">
+                            <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#3d3d3d;">Hi ${newUser.username},</p>
+                            <p style="margin:0 0 28px 0;font-size:15px;line-height:1.6;color:#3d3d3d;">Welcome to our app! Please verify your email by clicking the link below:</p>
+                            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                                <tr>
+                                <td style="border-radius:8px;background-color:#1f1f1f;">
+                                    <a href="${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}" style="display:inline-block;padding:13px 32px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">Verify Email</a>
+                                </td>
+                                </tr>
+                            </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:20px 40px 32px 40px;border-top:1px solid #eeeeee;">
+                            <p style="margin:0;font-size:12px;line-height:1.6;color:#a3a3a3;text-align:center;">If the button doesn't work, copy and paste this link into your browser:<br>
+                                <span style="color:#6b6b6b;word-break:break-all;">${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}</span>
+                            </p>
+                            </td>
+                        </tr>
+                        </table>
+                    </td>
+                    </tr>
+                </table>
+                </div>`,
+                `Hi ${newUser.username},\n\nWelcome to our app! Please verify your email by clicking the link below:\n${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}`
+            );
+        }
+        else {
+            await sendEmail(
+                newUser.email,
+                "Welcome to Our App!",
+                `<div style="margin:0;padding:0;background-color:#f7f7f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f7f5;padding:40px 0;">
+                    <tr>
+                    <td align="center">
+                        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
+                        <tr>
+                            <td style="padding:40px 40px 24px 40px;text-align:center;border-bottom:1px solid #eeeeee;">
+                            <div style="width:40px;height:40px;background-color:#1f1f1f;border-radius:10px;margin:0 auto 16px auto;"></div>
+                            <h1 style="margin:0;font-size:20px;font-weight:600;color:#1f1f1f;letter-spacing:-0.3px;">Welcome to Our App!</h1>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:32px 40px;">
+                            <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#3d3d3d;">Hi ${newUser.username},</p>
+                            <p style="margin:0 0 28px 0;font-size:15px;line-height:1.6;color:#3d3d3d;">Welcome to our app! Please verify your email by clicking the link below:</p>
+                            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                                <tr>
+                                <td style="border-radius:8px;background-color:#1f1f1f;">
+                                    <a href="${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}" style="display:inline-block;padding:13px 32px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">Verify Email</a>
+                                </td>
+                                </tr>
+                            </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding:20px 40px 32px 40px;border-top:1px solid #eeeeee;">
+                            <p style="margin:0;font-size:12px;line-height:1.6;color:#a3a3a3;text-align:center;">If the button doesn't work, copy and paste this link into your browser:<br>
+                                <span style="color:#6b6b6b;word-break:break-all;">${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}</span>
+                            </p>
+                            </td>
+                        </tr>
+                        </table>
+                    </td>
+                    </tr>
+                </table>
+                </div>`,
+                `Hi ${newUser.username},\n\nWelcome to our app! Please verify your email by clicking the link below:\n${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}`
+            );
+        }
         // res.status(201).json({ token, user: { id: newUser._id, username: newUser.username, email: newUser.email } });
         res.status(201).json({
             message: "User registered successfully. Please check your email for a welcome message.",
@@ -105,7 +181,7 @@ export const login = async (req, res) => {
 };
 
 // bug - if the refresh token is invalid or expired, the user should be logged out and redirected to the login page. This can be handled on the frontend by checking the response from this endpoint and clearing the user's session if necessary.
-export const refresh = async (req, res) => { 
+export const refresh = async (req, res) => {
     const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
@@ -192,11 +268,11 @@ export const logOut = async (req, res) => {
         // Clear the refresh token and access token from the user document and clear the cookie
         user.refreshToken = null;
         user.accessToken = null;
-        
+
         await user.save();
         res.clearCookie("refreshToken", refreshCookieOptions());
         res.clearCookie("accessToken", accessTokenOptions());
-        
+
         res.status(200).json({ message: "Logged out successfully", success: true });
     } catch (error) {
         console.error("Error logging out user:", error);
