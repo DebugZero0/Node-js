@@ -480,10 +480,23 @@ function formatMessageActionTime(timestamp) {
   })
 }
 
+function trashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden="true">
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+      />
+    </svg>
+  )
+}
+
 const Dashboard = () => {
   const { initializeSocketConnection, deleteChat, getChats, getMessages, sendMessage, updateChatTitle } = useChat()
   const { handleLogout } = useAuth()
-  const { updateUserName } = useUser()
+  const { updateUserName, deleteUser } = useUser()
   const user = useSelector((state) => state.auth.user)
   const [chats, setChats] = useState([])
   const [messages, setMessages] = useState([])
@@ -510,6 +523,8 @@ const Dashboard = () => {
   const [editingUserName, setEditingUserName] = useState(false)
   const [newUserName, setNewUserName] = useState("")
   const [savingUserName, setSavingUserName] = useState(false)
+  const [deletingUser, setDeletingUser] = useState(false)
+  const [showDeleteUserConfirm, setShowDeleteUserConfirm] = useState(false)
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
@@ -1452,6 +1467,15 @@ const Dashboard = () => {
                   <EditIcon2 className="h-5 w-5 ml-2" />
                 </button>
                 <button type="button"
+                  title="Delete Account"
+                  onClick={() => {
+                    setShowDeleteUserConfirm(true); 
+                  }}
+                  className="mt-4 rounded-full px-5 py-3 text-sm font-semibold text-white transition-all duration-150 brightness-50 focus:outline-none hover:brightness-100 flex items-center justify-center gap-4 active:scale-97"
+                >
+                  <TrashIcon className="h-5 w-5 ml-2" />
+                </button>
+                <button type="button"
                   title="Logout"
                   onClick={() => {
                     setShowLogoutConfirm(true);
@@ -1498,7 +1522,7 @@ const Dashboard = () => {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-rose-500/50 px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-rose-400/50 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-red-500 px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-rose-400/50 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
               >
                 Logout
               </button>
@@ -1663,6 +1687,50 @@ const Dashboard = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      ) : null}
+
+      {showDeleteUserConfirm ? (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-4 backdrop-blur-md"
+          onClick={() => setShowDeleteUserConfirm(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d0d0f] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-4 flex items-center gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">Delete User</p>
+                <h3 id="delete-user-title" className="mt-1 text-xl font-semibold text-white">
+                  Are you sure you want to delete your account?
+                </h3>
+              </div>
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setShowDeleteUserConfirm(false)}
+                className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.07] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setDeletingUser(true);
+                  await deleteUser();
+                  setDeletingUser(false);
+                  setShowDeleteUserConfirm(false);
+                }}
+                disabled={deletingUser}
+                className="inline-flex h-11 items-center justify-center rounded-full bg-red-500 px-5 text-sm font-semibold text-white transition-all duration-150 hover:bg-red-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+              >
+                {deletingUser ? "Deleting..." : "Delete Account"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}

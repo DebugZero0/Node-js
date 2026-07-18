@@ -40,6 +40,8 @@ const Login = () => {
     }
   }
 
+  const hiddenErrorMessages = ["No refresh token provided", "Invalid refresh token"]
+  
   return (
     <main className="min-h-screen bg-linear-to-br from-neutral-950 via-zinc-900 to-cyan-950 text-white">
       <div className="relative mx-auto flex min-h-screen w-full max-w-md items-center justify-center px-5 py-10">
@@ -47,7 +49,7 @@ const Login = () => {
           <h1 className="text-center text-3xl font-bold tracking-tight text-[#31b8c6]">Login</h1>
           <p className="mt-2 text-center text-sm text-zinc-300">Welcome back. Continue your chats.</p>
 
-          {error && error !== "No refresh token provided" && (
+          {error && !hiddenErrorMessages.includes(error) && (
             <div className="mt-5 rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-2.5 text-sm text-red-300">
               {error}
             </div>

@@ -23,9 +23,10 @@ const Register = () => {
 
     try {
       await handleRegister(payload)
-      navigate('/notes')
+      navigate('/notes', { replace: true })
     } catch (err) {
       const message =
+        err?.response?.data?.errors?.[0]?.msg ||
         err?.response?.data?.message ||
         err?.message ||
         'Something went wrong. Please try again.'
