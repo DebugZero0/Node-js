@@ -4,8 +4,14 @@ import { useChat } from "../hooks/useChat"
 import { createPortal } from "react-dom"
 import TypingIndicator from "../components/TypingIndicator"
 import { Send } from "lucide-react"
-import {useAuth} from "../../auth/hooks/useAuth" 
+import { useAuth } from "../../auth/hooks/useAuth"
 import { useUser } from "../hooks/useUser"
+import {
+  SparklesIcon,
+
+  MicrophoneIcon,
+  ArrowUpIcon,
+} from "@heroicons/react/24/outline";
 
 
 const DELAYS = ["delay-0", "delay-75", "delay-100", "delay-150", "delay-200", "delay-300", "delay-500"]
@@ -395,6 +401,15 @@ function ArrowLeftIcon({ className }) {
   );
 }
 
+function SearchGlassIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.7" />
+      <path d="m20 20-4.3-4.3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function InfoIcon({ className }) {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
@@ -493,6 +508,93 @@ function trashIcon() {
   )
 }
 
+/**
+ * Reusable, breakpoint-aware modal shell.
+ * Purely presentational — every modal below still owns its own
+ * open/close state and handlers, this just keeps their markup
+ * consistent and makes it trivial to drop in new dialogs later.
+ */
+function ModalShell({ open, onClose, labelledBy, size = "md", children }) {
+  if (!open) return null
+
+  const sizeClass =
+    size === "sm" ? "max-w-[min(92vw,26rem)]" : size === "lg" ? "max-w-[min(94vw,40rem)]" : "max-w-[min(92vw,28rem)]"
+
+  return (
+    <div
+      className="fixed inset-0 z-[65] flex items-end justify-center bg-black/60 backdrop-blur-md sm:items-center sm:px-4"
+      onClick={onClose}
+      aria-hidden="true"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={labelledBy}
+        className={`w-full ${sizeClass} rounded-t-3xl border border-white/10 bg-[#0d0d0f] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.6)] sm:rounded-2xl sm:p-6 max-h-[88vh] overflow-y-auto`}
+        onClick={(event) => event.stopPropagation()}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Shared confirm/destructive-action dialog. Wraps ModalShell so any
+ * future "are you sure" flow can reuse it with two lines of JSX.
+ */
+function ConfirmDialog({
+  open,
+  onClose,
+  eyebrow,
+  title,
+  description,
+  confirmLabel,
+  pendingLabel,
+  onConfirm,
+  pending,
+  tone = "danger",
+}) {
+  const confirmClass =
+    tone === "danger"
+      ? "bg-rose-500 hover:bg-rose-400 focus-visible:ring-rose-300/50 text-white"
+      : "bg-white hover:bg-zinc-200 focus-visible:ring-white/40 text-black"
+
+  return (
+    <ModalShell open={open} onClose={onClose} labelledBy="confirm-dialog-title" size="sm">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="min-w-0">
+          {eyebrow ? <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">{eyebrow}</p> : null}
+          <h3 id="confirm-dialog-title" className="mt-1 text-lg font-semibold text-white sm:text-xl">
+            {title}
+          </h3>
+        </div>
+      </div>
+
+      {description ? <p className="text-sm leading-6 text-zinc-500">{description}</p> : null}
+
+      <div className="mt-6 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end sm:gap-3">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={Boolean(pending)}
+          className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.07] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={Boolean(pending)}
+          className={`inline-flex h-11 items-center justify-center rounded-full px-5 text-sm font-semibold transition-all duration-150 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 ${confirmClass}`}
+        >
+          {pending ? pendingLabel : confirmLabel}
+        </button>
+      </div>
+    </ModalShell>
+  )
+}
+
 const Dashboard = () => {
   const { initializeSocketConnection, deleteChat, getChats, getMessages, sendMessage, updateChatTitle } = useChat()
   const { handleLogout } = useAuth()
@@ -525,10 +627,14 @@ const Dashboard = () => {
   const [savingUserName, setSavingUserName] = useState(false)
   const [deletingUser, setDeletingUser] = useState(false)
   const [showDeleteUserConfirm, setShowDeleteUserConfirm] = useState(false)
+  const [chatSearchOpen, setChatSearchOpen] = useState(false)
+  const [chatSearchQuery, setChatSearchQuery] = useState("")
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
   const sidebarScrollRef = useRef(null)
+  const chatSearchInputRef = useRef(null)
+  const formRef = useRef(null);
 
   function resizeInputHeight() {
     const inputElement = inputRef.current
@@ -538,6 +644,12 @@ const Dashboard = () => {
     inputElement.style.height = "auto"
     inputElement.style.height = `${Math.min(inputElement.scrollHeight, maxHeight)}px`
     inputElement.style.overflowY = inputElement.scrollHeight > maxHeight ? "auto" : "hidden"
+  }
+
+  function openChatSearch() {
+    setDrawerOpen(true)
+    setChatSearchOpen(true)
+    requestAnimationFrame(() => chatSearchInputRef.current?.focus())
   }
 
   useEffect(() => {
@@ -561,11 +673,8 @@ const Dashboard = () => {
         if (!mounted) return
 
         const chatList = data.chats || []
-        setChats(chatList)
+        setChats(chatList) 
 
-        if (chatList.length > 0) {
-          setActiveChatId((currentId) => currentId || chatList[0]._id)
-        }
       } catch (fetchError) {
         if (!mounted) return
         setError(fetchError.response?.data?.error || "Failed to load chats")
@@ -633,6 +742,13 @@ const Dashboard = () => {
   }, [drawerOpen])
 
   useEffect(() => {
+    if (!drawerOpen) {
+      setChatSearchOpen(false)
+      setChatSearchQuery("")
+    }
+  }, [drawerOpen])
+
+  useEffect(() => {
     if (!infoOpen) return
 
     function handleKeyDown(event) {
@@ -682,6 +798,20 @@ const Dashboard = () => {
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [menuOpenChatId])
+
+  useEffect(() => {
+    if (!chatSearchOpen) return
+
+    function handleKeyDown(event) {
+      if (event.key === "Escape") {
+        setChatSearchOpen(false)
+        setChatSearchQuery("")
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
+  }, [chatSearchOpen])
 
   const activeChat = useMemo(
     () => chats.find((item) => item._id === activeChatId) || null,
@@ -856,7 +986,29 @@ const Dashboard = () => {
     setInputValue("")
     setDrawerOpen(false)
     setMenuOpenChatId(null)
+    setChatSearchOpen(false)
+    setChatSearchQuery("")
     requestAnimationFrame(resizeInputHeight)
+  }
+
+  function toggleChatSearch() {
+    setChatSearchOpen((current) => {
+      const next = !current
+      if (!next) setChatSearchQuery("")
+      return next
+    })
+    setMenuOpenChatId(null)
+    requestAnimationFrame(() => chatSearchInputRef.current?.focus())
+  }
+
+  function closeChatSearch() {
+    setChatSearchOpen(false)
+    setChatSearchQuery("")
+  }
+
+  function handleSelectSearchedChat(chatId) {
+    handleSelectChat(chatId)
+    closeChatSearch()
   }
 
   function handleEditMessageDraft(message) {
@@ -934,6 +1086,10 @@ const Dashboard = () => {
   }
 
   const sidebarChats = chats
+  const trimmedSearchQuery = chatSearchQuery.trim().toLowerCase()
+  const searchedChats = trimmedSearchQuery
+    ? sidebarChats.filter((item) => (item.title || "New chat").toLowerCase().includes(trimmedSearchQuery))
+    : sidebarChats
   const pendingDeleteChat = pendingDeleteChatId
     ? chats.find((item) => item._id === pendingDeleteChatId) || null
     : null
@@ -953,11 +1109,11 @@ const Dashboard = () => {
         .scrollbar-chat { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.09) transparent; }
       `}</style>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* Collapsed rail — permanent on md+, hidden on mobile               */}
-      {/* ---------------------------------------------------------------- */}
+      {/* ================================================================ */}
+      {/* Collapsed rail — persistent from md upward                       */}
+      {/* ================================================================ */}
       <nav
-        className={`fixed inset-y-0 left-0 z-30 hidden w-[72px] flex-col items-center border-r border-white/[0.06] bg-[#0d0d0f] py-5 transition-all duration-500 ease-out md:flex ${mounted ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"
+        className={`fixed inset-y-0 left-0 z-30 hidden w-16 flex-col items-center border-r border-white/[0.06] bg-[#0d0d0f] py-4 transition-all duration-500 ease-out md:flex md:w-[55px] md:py-5 ${mounted ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"
           }`}
       >
         <button
@@ -966,24 +1122,33 @@ const Dashboard = () => {
           aria-label="Open chat navigation"
           aria-expanded={drawerOpen}
           title="Open sidebar"
-          className={`mb-6 flex h-10 w-11 items-center justify-center rounded-xl text-zinc-300 shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all duration-300 ease-out hover:border-white/20 hover:bg-[#121212] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${drawerOpen ? "pointer-events-none scale-95 opacity-0" : "scale-100 opacity-100"
+          className={`mb-6 flex h-9 w-9 items-center justify-center rounded-xl text-zinc-300 shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all duration-300 ease-out hover:border-white/20 hover:bg-[#121212] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${drawerOpen ? "pointer-events-none scale-95 opacity-0" : "scale-100 opacity-100"
             }`}
         >
           <MenuIcon open={drawerOpen} />
         </button>
-
+      <div className="flex flex-col gap-2">
         <button
           type="button"
           onClick={handleNewChat}
           title="New chat"
-          className="mb-4 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-zinc-300 transition-all duration-150 hover:border-white/20 hover:bg-white/[0.07] hover:text-white active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 "
+          className="flex h-9 w-9 items-center justify-center rounded-xl  bg-white/[0.03] text-zinc-300 transition-all duration-150 hover:border-white/20 hover:bg-[#121212] hover:text-white active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
         >
           <PlusIcon className="h-4 w-4" />
         </button>
+        <button
+          type="button"
+          onClick={openChatSearch}
+          title="search chats"
+          className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.03] text-zinc-300 transition-all duration-150 hover:border-white/20 hover:bg-[#121212] hover:text-white active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+        >
+          <SearchGlassIcon className="h-4 w-4" />
+        </button>
+        </div>
 
-        <div className="h-px w-8 bg-white/[0.06]" />
+        <div className="h-px w-8 bg-white/5" />
 
-        <div className="mt-4 flex w-full flex-1 flex-col items-center gap-2 overflow-hidden">
+        <div className="mt-4 flex w-full flex-1 flex-col items-center gap-2 overflow-y-auto overflow-x-hidden">
           {sidebarChats.slice(0, 8).map((item) => {
             const isActive = item._id === activeChatId
             return (
@@ -992,7 +1157,7 @@ const Dashboard = () => {
                 type="button"
                 title={item.title || "Chat"}
                 onClick={() => handleSelectChat(item._id)}
-                className={`relative flex h-10 w-12 items-center border border-white/[0.06] justify-center rounded-xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${isActive
+                className={`relative flex h-9 w-9 shrink-0 items-center border border-white/[0.06] justify-center rounded-xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${isActive
                   ? "border-white/20 bg-white/[0.09] text-white"
                   : "border-white/[0.06] hover:bg-[#121212] text-zinc-500 hover:border-white/15 hover:text-zinc-200"
                   }`}
@@ -1016,9 +1181,9 @@ const Dashboard = () => {
         </button>
       </nav>
 
-      {/* ---------------------------------------------------------------- */}
+      {/* ================================================================ */}
       {/* Backdrop                                                          */}
-      {/* ---------------------------------------------------------------- */}
+      {/* ================================================================ */}
       <div
         onClick={() => setDrawerOpen(false)}
         aria-hidden="true"
@@ -1028,48 +1193,96 @@ const Dashboard = () => {
           }`}
       />
 
-      {/* ---------------------------------------------------------------- */}
-      {/* Expanded drawer — responsive width overlay, slides in on x        */}
-      {/* ---------------------------------------------------------------- */}
+      {/* ================================================================ */}
+      {/* Expanded drawer — overlay on every breakpoint, width scales up    */}
+      {/* ================================================================ */}
       <aside
         role="dialog"
         aria-modal="true"
         aria-label="Chat navigation"
-        className={`fixed inset-y-0 left-0 z-50 flex w-[86vw] max-w-[300px] flex-col overflow-hidden border-r border-white/[0.06] bg-[#0d0d0f] shadow-[0_30px_90px_rgba(0,0,0,0.6)] transition-all sm:w-[280px] ${drawerOpen
+        className={`fixed inset-y-0 left-0 z-50 flex w-[88vw] max-w-[290px] flex-col overflow-hidden border-r border-white/[0.06] bg-[#0d0d0f] shadow-[0_30px_90px_rgba(0,0,0,0.6)] transition-all sm:w-[300px] lg:w-[320px] ${drawerOpen
           ? "translate-x-0 opacity-100 duration-300 ease-out"
           : "pointer-events-none -translate-x-full opacity-0 duration-200 ease-in"
           }`}
       >
+        {/* Drawer header */}
         <div
-          className={`relative border-b border-white/[0.06] p-5 transition-all duration-300 ease-out ${drawerOpen ? "translate-y-0 opacity-100 delay-75" : "-translate-y-2 opacity-0"
+          className={`relative shrink-0 border-b border-white/[0.06] p-4 transition-all duration-300 ease-out sm:p-5 ${drawerOpen ? "translate-y-0 opacity-100 delay-75" : "-translate-y-2 opacity-0"
             }`}
         >
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Perplexity</p>
-              <h1 className="mt-1 truncate text-2xl font-semibold text-white">Chats</h1>
+              <h1 className="mt-1 truncate text-xl font-semibold text-white sm:text-2xl">Chats</h1>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleNewChat}
-                className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.05] px-4 py-2 text-sm font-medium text-zinc-100 transition-colors duration-150 hover:border-white/25 hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-              >
-                <PlusIcon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">New chat</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(false)}
-                aria-label="Close chat navigation"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-zinc-400 transition-colors duration-150 hover:border-white/20 hover:text-white md:hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-              >
-                <CloseIcon className="h-4 w-4" />
-              </button>
+
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(false)}
+              aria-label="Close chat navigation"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-transparent text-zinc-400 transition-colors duration-150 hover:border-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+            >
+              <CloseIcon className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div className="mt-4 flex-col items-center gap-2">
+            <button
+              type="button"
+              onClick={handleNewChat}
+              className="group w-full flex flex-1 items-center gap-3 rounded-xl bg-transparent px-3 py-2.5 text-sm font-medium text-zinc-400 transition-colors duration-150 hover:bg-black hover:text-zinc-100 focus:outline-none"
+            >
+              <PlusIcon className="h-5 w-5 shrink-0 rounded-full bg-white/[0.1] p-0.5 transition-all duration-200 ease-out group-hover:scale-110 group-hover:rotate-5 group-active:scale-95 group-active:rotate-0" />
+              <span>New chat</span>
+            </button>
+            <button
+              type="button"
+              onClick={toggleChatSearch}
+              aria-label={chatSearchOpen ? "Close chat search" : "Search chats"}
+              aria-expanded={chatSearchOpen}
+              title="Search chats"
+              className={`group w-full flex flex-1 items-center gap-3 rounded-xl bg-transparent px-3 py-2.5 text-sm font-medium ${chatSearchOpen
+                ? "border-white/20 bg-white/[0.09] text-white"
+                : "border-transparent text-zinc-400 hover:bg-black hover:text-zinc-100"
+                }`}
+            >
+              <SearchGlassIcon className="h-5 w-5 shrink-0 rounded-full p-0.5 transition-all duration-200 ease-in-out group-hover:scale-110 group-hover:rotate-5 group-active:scale-95 group-active:rotate-0" />
+              <span>Search chats</span>
+            </button>
+          </div>
+
+          {/* Search panel */}
+          <div
+            className={`grid transition-all duration-250 cubic-bezier(.22,1,.36,1) ${chatSearchOpen ? "mt-3 grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+              }`}
+          >
+            <div className="overflow-hidden">
+              <div className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-black/30 px-3 py-2.5 focus-within:border-white/25 focus-within:ring-2 focus-within:ring-white/10">
+                <input
+                  ref={chatSearchInputRef}
+                  type="text"
+                  value={chatSearchQuery}
+                  onChange={(event) => setChatSearchQuery(event.target.value)}
+                  placeholder="Search chats by title..."
+                  aria-label="Search chats by title"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-zinc-600"
+                />
+                {chatSearchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => setChatSearchQuery("")}
+                    aria-label="Clear search"
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-500 transition-colors hover:text-zinc-200 focus:outline-none"
+                  >
+                    <CloseIcon className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
         </div>
 
+        {/* Chat list */}
         <div className="relative min-h-0 flex-1">
           <div
             ref={sidebarScrollRef}
@@ -1085,8 +1298,12 @@ const Dashboard = () => {
                 <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-zinc-500">
                   No chats yet. Start a new conversation from the composer.
                 </div>
+              ) : searchedChats.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-zinc-500">
+                  No chats match "{chatSearchQuery.trim()}".
+                </div>
               ) : (
-                sidebarChats.map((item, index) => {
+                searchedChats.map((item, index) => {
                   const isActive = item._id === activeChatId
                   const isDeleting = deletingChatId === item._id
                   const isMenuOpen = menuOpenChatId === item._id
@@ -1097,11 +1314,15 @@ const Dashboard = () => {
                       key={item._id}
                       role="button"
                       tabIndex={0}
-                      onClick={() => handleSelectChat(item._id)}
+                      onClick={() => (chatSearchOpen ? handleSelectSearchedChat(item._id) : handleSelectChat(item._id))}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault()
-                          handleSelectChat(item._id)
+                          if (chatSearchOpen) {
+                            handleSelectSearchedChat(item._id)
+                          } else {
+                            handleSelectChat(item._id)
+                          }
                         }
                       }}
                       className={`group relative w-full rounded-xl border p-3.5 pr-11 text-left transition-all ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${drawerOpen ? `translate-x-0 opacity-100 duration-300 ${delayClass}` : "-translate-x-2 opacity-0 duration-200"
@@ -1121,7 +1342,7 @@ const Dashboard = () => {
                         aria-expanded={isMenuOpen}
                         aria-haspopup="menu"
                         data-chat-menu-button="true"
-                        className="absolute right-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-zinc-500 opacity-0 transition-all duration-150 hover:bg-white/[0.08] hover:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 group-hover:opacity-100 group-focus-within:opacity-100"
+                        className="absolute right-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-zinc-500 opacity-100 transition-all duration-150 hover:bg-white/[0.08] hover:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                       >
                         <DotsIcon className="h-4 w-4" />
                       </button>
@@ -1132,7 +1353,7 @@ const Dashboard = () => {
                             data-chat-menu-panel="true"
                             role="menu"
                             aria-label="Chat actions"
-                            style={{ top: menuPosition.top, left: menuPosition.left }}
+                            style={{ top: menuPosition.top, left: Math.max(8, menuPosition.left) }}
                             className="fixed z-[200] w-44 rounded-xl border border-white/10 bg-[#141416] p-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
                             onClick={(event) => event.stopPropagation()}
                           >
@@ -1185,49 +1406,50 @@ const Dashboard = () => {
           />
         </div>
 
+        {/* Drawer footer — account entry point */}
         <div
-          className={`relative border-t border-white/[0.06] p-4 transition-all duration-300 ease-out ${drawerOpen ? "translate-y-0 opacity-100 delay-150" : "translate-y-3 opacity-0"
+          className={`relative shrink-0 border-t border-white/[0.06] p-3 transition-all duration-300 ease-out sm:p-4 ${drawerOpen ? "translate-y-0 opacity-100 delay-150" : "translate-y-3 opacity-0"
             }`}
         >
-          <div className="flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3">
-            <button
-              type="button"
-              onClick={() => setShowUserInfo(true)} // open the user info feature
-              aria-label="Show user information"
-              className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-zinc-500 transition-colors duration-150 hover:text-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-            >
-              <GlassAvatar label={userInitial} />
-            </button>
+          <button
+            type="button"
+            onClick={() => setShowUserInfo(true)}
+            aria-label="Show user information"
+            className="flex w-full items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 text-left transition-colors duration-150 hover:border-white/15 hover:bg-white/[0.05] focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+          >
+            <GlassAvatar label={userInitial} />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-white">{userLabel}</p>
               <p className="truncate text-xs text-zinc-500">{user?.email || "Free plan"}</p>
             </div>
-          </div>
+          </button>
         </div>
       </aside>
 
-      {/* ---------------------------------------------------------------- */}
-      {/* Floating toggle button                                           */}
-      {/* ---------------------------------------------------------------- */}
-      <button
-        type="button"
-        onClick={() => setDrawerOpen((current) => !current)}
-        aria-label={drawerOpen ? "Close chat navigation" : "Open chat navigation"}
-        aria-expanded={drawerOpen}
-        className={`fixed top-4 z-[60] flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#0d0d0f] text-zinc-300 shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all duration-300 ease-out hover:border-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 md:top-5 ${drawerOpen ? "left-4 opacity-0 pointer-events-none md:left-[300px] md:opacity-100 md:pointer-events-auto" : "left-4 rotate-0 md:pointer-events-none md:left-[86px] md:opacity-0"
-          }`}
-      >
-        <MenuIcon open={drawerOpen} />
-      </button>
+      {/* ================================================================ */}
+      {/* Floating menu toggle — mobile / tablet only                      */}
+      {/* ================================================================ */}
+      {window.innerWidth < 768 && (
+        <button
+          type="button"
+          onClick={() => setDrawerOpen((current) => !current)}
+          aria-label={drawerOpen ? "Close chat navigation" : "Open chat navigation"}
+          aria-expanded={drawerOpen}
+          className={`fixed top-4 z-[60] flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-[#0d0d0f]/80 text-zinc-300 backdrop-blur-md transition-all duration-300 ease-out hover:border-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${drawerOpen ? "left-4 opacity-0 pointer-events-none" : "left-4 rotate-0 opacity-100 pointer-events-auto"
+            }`}
+        >
+          <MenuIcon open={drawerOpen} />
+        </button>
+      )}
 
-      {/* ---------------------------------------------------------------- */}
-      {/* Main content — offset by the permanent rail on md+ only          */}
-      {/* ---------------------------------------------------------------- */}
-      <div className="fixed inset-0 flex flex-col md:pl-[72px]">
+      {/* ================================================================ */}
+      {/* Main content — offset by the persistent rail on md+ only         */}
+      {/* ================================================================ */}
+      <div className="fixed inset-0 flex flex-col md:pl-16 lg:pl-[72px]">
         <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-          <header className="sticky top-0 z-20 flex-shrink-0 relative bg-[#0a0a0b]/80 px-5 py-4 backdrop-blur-xl lg:px-8">
+          <header className="sticky top-0 z-20 flex-shrink-0 relative bg-[#0a0a0b]/80 px-4 py-3.5 backdrop-blur-xl sm:px-5 sm:py-4 lg:px-8">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="truncate pl-14 text-base font-medium text-white md:pl-10">
+              <h2 className="min-w-0 truncate pl-14 text-sm font-medium text-white sm:text-base md:pl-2">
                 <InlineMarkdownText content={activeChat?.title} fallback="New conversation" />
               </h2>
 
@@ -1235,110 +1457,121 @@ const Dashboard = () => {
                 type="button"
                 onClick={() => setInfoOpen(true)}
                 aria-label="Show app information"
-                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-zinc-500 transition-colors duration-150 hover:text-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-zinc-500 transition-colors duration-150 hover:text-zinc-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
               >
                 <InfoIcon className="h-4 w-4" />
               </button>
             </div>
-
-            <div className="pointer-events-none absolute inset-x-0 top-full h-6 bg-gradient-to-b from-[#0a0a0b] to-transparent" />
           </header>
 
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 lg:px-8">
-                {error ? (
-                  <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/[0.06] px-4 py-3 text-sm text-rose-300">
-                    {error}
-                  </div>
-                ) : null}
-
-                {loadingMessages ? (
-                  <MessageSkeletonList />
-                ) : messages.length === 0 ? (
-                  <div className="flex min-h-[50vh] items-center justify-center sm:min-h-[55vh]">
-                    <div className="max-w-md text-center">
-                      <h3 className="text-2xl font-semibold text-white sm:text-3xl">Ask anything</h3>
-                      <p className="mt-2 text-sm leading-6 text-zinc-500">
-                        Pick a chat from the sidebar or start a new one.
-                      </p>
+              <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-3  sm:px-6 lg:px-8 pb-26">
+                <div className="mx-auto w-full max-w-3xl">
+                  {error ? (
+                    <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/[0.06] px-4 py-3 text-sm text-rose-300">
+                      {error}
                     </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    {messages.map((message) => {
-                      const isUserMessage = message.role === "user"
-                      const actionTime = formatMessageActionTime(message.createdAt)
+                  ) : null}
 
-                      return (
-                        <div
-                          key={message._id}
-                          className={`group/message flex ${isUserMessage ? "justify-end" : "justify-start"}`}
-                        >
-                          <div
-                            className={`flex max-w-[min(760px,88%)] flex-col ${isUserMessage ? "items-end" : "items-start"}`}
-                          >
-                            <div
-                              className={`max-w-full rounded-2xl border px-4 py-3 ${isUserMessage
-                                ? "border-transparent bg-white/[0.06] text-zinc-100"
-                                : "border-transparent bg-black/5 text-zinc-100"
-                                }`}
+                  {loadingMessages ? (
+                    <MessageSkeletonList />
+                  ) : messages.length === 0 ? (
+                    <div className="flex min-h-[50vh] items-center justify-center sm:min-h-[55vh]">
+                      <div className="max-w-md text-center">
+                        <h3 className="text-xl font-semibold text-white sm:text-2xl lg:text-3xl">Ask anything</h3>
+                        <p className="mt-2 text-sm leading-6 text-zinc-500">
+                          Pick a chat from the sidebar or start a new one.
+                        </p>
+                        {/* Suggestion chips */}
+                        <div className="mt-6 flex flex-wrap justify-center gap-2 sm:gap-3">
+                          {["MERN Stack", "LangChain", "WebRTC", "AI Integration"].map((item) => (
+                            <button
+                              key={item}
+                              className="rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-300 transition hover:bg-white/10 sm:px-4 sm:text-sm"
                             >
-                              {isUserMessage ? (
-                                <p className="whitespace-pre-wrap text-sm leading-6 text-inherit">{message.content}</p>
-                              ) : (
-                                <MarkdownMessage content={message.content} />
-                              )}
-                            </div>
-
-                            <div
-                              className={`mt-1 flex min-h-8 items-center gap-1 text-[11px] text-zinc-500 opacity-100 transition-all duration-150 ease-in-out sm:opacity-0 sm:group-hover/message:opacity-100 sm:group-focus-within/message:opacity-100 ${isUserMessage ? "justify-end" : "justify-start"}`}
-                            >
-                              <span className="mr-1 whitespace-nowrap">{actionTime}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleEditMessageDraft(message)}
-                                aria-label="Edit message"
-                                title="Edit message"
-                                className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] text-zinc-500 transition-colors duration-150 hover:border-white/15 hover:bg-white/[0.07] hover:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
-                              >
-                                <EditIcon className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleCopyMessage(message)}
-                                aria-label="Copy message"
-                                title="Copy message"
-                                className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] text-zinc-500 transition-colors duration-150 hover:border-white/15 hover:bg-white/[0.07] hover:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
-                              >
-                                <CopyIcon className="h-3.5 w-3.5" />
-                              </button>
-                              {copiedMessageId === message._id ? (
-                                <span className="whitespace-nowrap px-1 text-zinc-300">Copied</span>
-                              ) : null}
-
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                    {sendingMessage ? (
-                      <div className="flex justify-start">
-                        <div className="min-h-[44px] max-w-[min(760px,88%)] rounded-2xl border border-transparent px-4 py-3 text-zinc-100">
-                          <div className="flex min-h-6 items-center text-zinc-300">
-                            <TypingIndicator />
-                          </div>
+                              {item}
+                            </button>
+                          ))}
                         </div>
                       </div>
-                    ) : null}
-                    <div ref={messagesEndRef} />
-                  </div>
-                )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {messages.map((message) => {
+                        const isUserMessage = message.role === "user"
+                        const actionTime = formatMessageActionTime(message.createdAt)
 
+                        return (
+                          <div
+                            key={message._id}
+                            className={`group/message flex ${isUserMessage ? "justify-end" : "justify-start"}`}
+                          >
+                            <div
+                              className={`flex max-w-[92%] flex-col sm:max-w-[85%] lg:max-w-[75%] ${isUserMessage ? "items-end" : "items-start"}`}
+                            >
+                              <div
+                                className={`max-w-full rounded-2xl border px-4 py-3 ${isUserMessage
+                                  ? "border-transparent bg-white/[0.06] text-zinc-100"
+                                  : "border-transparent bg-black/5 text-zinc-100"
+                                  }`}
+                              >
+                                {isUserMessage ? (
+                                  <p className="whitespace-pre-wrap text-sm leading-6 text-inherit">{message.content}</p>
+                                ) : (
+                                  <MarkdownMessage content={message.content} />
+                                )}
+                              </div>
+
+                              <div
+                                className={`mt-1 flex min-h-8 flex-wrap items-center gap-1 text-[11px] text-zinc-500 opacity-100 transition-all duration-150 ease-in-out sm:opacity-0 sm:group-hover/message:opacity-100 sm:group-focus-within/message:opacity-100 ${isUserMessage ? "justify-end" : "justify-start"}`}
+                              >
+                                <span className="mr-1 whitespace-nowrap">{actionTime}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditMessageDraft(message)}
+                                  aria-label="Edit message"
+                                  title="Edit message"
+                                  className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] text-zinc-500 transition-colors duration-150 hover:border-white/15 hover:bg-white/[0.07] hover:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+                                >
+                                  <EditIcon className="h-3.5 w-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyMessage(message)}
+                                  aria-label="Copy message"
+                                  title="Copy message"
+                                  className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] text-zinc-500 transition-colors duration-150 hover:border-white/15 hover:bg-white/[0.07] hover:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+                                >
+                                  <CopyIcon className="h-3.5 w-3.5" />
+                                </button>
+                                {copiedMessageId === message._id ? (
+                                  <span className="whitespace-nowrap px-1 text-zinc-300">Copied</span>
+                                ) : null}
+
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                      {sendingMessage ? (
+                        <div className="flex justify-start">
+                          <div className="min-h-[44px] max-w-[92%] rounded-2xl border border-transparent px-4 py-3 text-zinc-100 sm:max-w-[85%] lg:max-w-[75%]">
+                            <div className="flex min-h-6 items-center text-zinc-300">
+                              <TypingIndicator />
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+                      <div ref={messagesEndRef} />
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="relative bottom-0 left-0 right-0 z-20 flex flex-shrink-0 justify-center px-3 py-3 sm:px-6 sm:py-4 lg:px-8 backdrop-blur-3xl">
-                <form onSubmit={handleSendMessage} className="w-full max-w-lg rounded-2xl  p-3">
-                  <div className="flex items-center gap-2 bg-[#131316] px-3 py-1.5 rounded-2xl">
+              {/* Composer */}
+              <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-shrink-0 justify-center border-t border-white/[0.04] px-3 py-3 backdrop-blur-xl sm:px-6 sm:py-4 lg:px-8">
+                <form onSubmit={handleSendMessage} ref={formRef} className="w-xl max-w-xl p-0 sm:max-w-2xl sm:p-1 lg:max-w-3xl">
+                  <div className="flex items-center gap-2 rounded-2xl bg-[#131316] px-2 py-1.5 sm:px-3">
                     <textarea
                       ref={inputRef}
                       value={inputValue}
@@ -1346,17 +1579,28 @@ const Dashboard = () => {
                         setInputValue(event.target.value)
                         resizeInputHeight()
                       }}
+                        onKeyDown={(event) => {
+                        if (
+                          event.key === "Enter" &&
+                          !event.shiftKey &&
+                          !sendingMessage &&
+                          inputValue.trim()
+                        ) {
+                          event.preventDefault();
+                          formRef.current?.requestSubmit();
+                        }
+                      }}
                       rows={1}
                       placeholder="Ask something or start a new chat..."
-                      className="min-h-12 flex-1 resize-none overflow-hidden rounded-xl  bg-[#131316] px-4 py-3 text-sm leading-6 text-white outline-none placeholder:text-zinc-600 transition-colors duration-150 scrollbar-thumb-zinc-700 scrollbar-track-transparent scrollbar-thin"
+                      className="min-h-11 flex-1 resize-none overflow-hidden rounded-xl bg-[#131316] px-3 py-2.5 text-sm leading-6 text-white outline-none placeholder:text-zinc-600 transition-colors duration-150 scrollbar-thumb-zinc-700 scrollbar-track-transparent scrollbar-thin sm:min-h-12 sm:px-4 sm:py-3"
                     />
                     <button
                       type="submit"
                       disabled={sendingMessage || !inputValue.trim()}
                       aria-label="Send message"
-                      className="flex h-9 w-11 flex-shrink-0 items-center justify-center rounded-full bg-white text-black transition-all duration-150 ease-out hover:bg-zinc-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 disabled:active:scale-100"
+                      className="relative flex h-9 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white text-black transition-all duration-150 ease-out hover:bg-zinc-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 disabled:active:scale-100 sm:w-11"
                     >
-                      <ArrowLeftIcon className="absolute h-4 w-4 rotate-180" />
+                      <ArrowLeftIcon className="h-4 w-4 rotate-180" />
                     </button>
                   </div>
                 </form>
@@ -1366,375 +1610,267 @@ const Dashboard = () => {
         </section>
       </div>
 
-      {infoOpen ? (
-        <div
-          className="fixed inset-0 z-[65] flex items-center justify-center bg-black/60 px-4 backdrop-blur-md"
-          onClick={() => setInfoOpen(false)}
-          aria-hidden="true"
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="app-info-title"
-            className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0d0d0f] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
-            onClick={(event) => event.stopPropagation()}
+      {/* ================================================================ */}
+      {/* App info modal                                                    */}
+      {/* ================================================================ */}
+      <ModalShell open={infoOpen} onClose={() => setInfoOpen(false)} labelledBy="app-info-title" size="lg">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">About this app</p>
+            <h3 id="app-info-title" className="mt-1 text-xl font-semibold text-white sm:text-2xl">
+              Project Perplexity
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setInfoOpen(false)}
+            aria-label="Close app information"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-zinc-400 transition-colors duration-150 hover:border-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">About this app</p>
-                <h3 id="app-info-title" className="mt-1 text-2xl font-semibold text-white">
-                  Project Perplexity
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setInfoOpen(false)}
-                aria-label="Close app information"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-zinc-400 transition-colors duration-150 hover:border-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-              >
-                <CloseIcon className="h-4 w-4" />
-              </button>
-            </div>
+            <CloseIcon className="h-4 w-4" />
+          </button>
+        </div>
 
-            <div className="mt-5 space-y-4 text-sm leading-6 text-zinc-400">
-              <p>
-                This app is a chat workspace for creating conversations, reading message history,
-                and keeping long threads usable in the right-hand panel.
-              </p>
+        <div className="mt-5 space-y-4 text-sm leading-6 text-zinc-400">
+          <p>
+            This app is a chat workspace for creating conversations, reading message history,
+            and keeping long threads usable in the right-hand panel.
+          </p>
 
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">Creator</p>
-                <p className="mt-2 text-base font-semibold text-white">Ankan Nandi</p>
-                <p className="mt-1 text-sm text-zinc-500">
-                  Built for the Project Perplexity workspace.
-                </p>
-              </div>
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">Creator</p>
+            <p className="mt-2 text-base font-semibold text-white">Ankan Nandi</p>
+            <p className="mt-1 text-sm text-zinc-500">
+              Built for the Project Perplexity workspace.
+            </p>
+          </div>
 
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">What it does</p>
-                <ul className="mt-2 space-y-1 text-zinc-400">
-                  <li>• Open chats from the sidebar and continue any thread.</li>
-                  <li>• Send messages from the composer at the bottom.</li>
-                  <li>• Delete chats when you want to clear a conversation.</li>
-                </ul>
-              </div>
-            </div>
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">What it does</p>
+            <ul className="mt-2 space-y-1 text-zinc-400">
+              <li>• Open chats from the sidebar and continue any thread.</li>
+              <li>• Send messages from the composer at the bottom.</li>
+              <li>• Delete chats when you want to clear a conversation.</li>
+            </ul>
           </div>
         </div>
-      ) : null}
+      </ModalShell>
 
-      {showUserInfo ? (
-        <div
-          className="fixed inset-0 z-[65] flex items-center justify-center bg-black/60 px-4 backdrop-blur-md"
-          onClick={() => setShowUserInfo(false)}
-          aria-hidden="true"
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="user-info-title"
-            className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0d0d0f] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
-            onClick={(event) => event.stopPropagation()}
+      {/* ================================================================ */}
+      {/* User info / account modal                                        */}
+      {/* ================================================================ */}
+      <ModalShell open={showUserInfo} onClose={() => setShowUserInfo(false)} labelledBy="user-info-title" size="md">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">User information</p>
+            <h3 id="user-info-title" className="mt-1 truncate text-xl font-semibold text-white sm:text-2xl">
+              {userLabel}
+            </h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowUserInfo(false)}
+            aria-label="Close user information"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-zinc-400 transition-colors duration-150 hover:border-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
           >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">User Information</p>
-                <h3 id="user-info-title" className="mt-1 text-2xl font-semibold text-white">
-                  {userLabel}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowUserInfo(false)}
-                aria-label="Close user information"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-zinc-400 transition-colors duration-150 hover:border-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-              >
-                <CloseIcon className="h-4 w-4" />
-              </button>
-            </div>
+            <CloseIcon className="h-4 w-4" />
+          </button>
+        </div>
 
-            <div className="mt-5 space-y-4 text-sm leading-6 text-zinc-400">
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">Email</p>
-                <p className="mt-2 text-base font-semibold text-white">{user?.email || "N/A"}</p>
-              </div>
-              <div className=" p-4 flex justify-around gap-3 ">
-                <button type="button"
-                  title="Edit details"
-                  onClick={startEditUserName}
-                  className="mt-4 rounded-full px-5 py-3 text-sm font-semibold text-white transition-all duration-150 brightness-50 focus:outline-none hover:brightness-100 flex items-center justify-center gap-4 active:scale-97"
-                >
-                  <EditIcon2 className="h-5 w-5 ml-2" />
-                </button>
-                <button type="button"
-                  title="Delete Account"
-                  onClick={() => {
-                    setShowDeleteUserConfirm(true); 
-                  }}
-                  className="mt-4 rounded-full px-5 py-3 text-sm font-semibold text-white transition-all duration-150 brightness-50 focus:outline-none hover:brightness-100 flex items-center justify-center gap-4 active:scale-97"
-                >
-                  <TrashIcon className="h-5 w-5 ml-2" />
-                </button>
-                <button type="button"
-                  title="Logout"
-                  onClick={() => {
-                    setShowLogoutConfirm(true);
-                  }}
-                  className="mt-4 rounded-full px-5 py-3 text-sm font-semibold text-white transition-all duration-150 focus:outline-none brightness-50 hover:brightness-100  flex items-center justify-center gap-4 active:scale-97"
-                >
-                  <LogoutIcon className="h-5 w-5 ml-2" />
-                </button>
-              </div>
-            </div>
+        <div className="mt-5 space-y-4 text-sm leading-6 text-zinc-400">
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+            <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">Email</p>
+            <p className="mt-2 truncate text-base font-semibold text-white">{user?.email || "N/A"}</p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:gap-3 sm:p-4">
+            <button
+              type="button"
+              onClick={startEditUserName}
+              className="flex flex-col items-center justify-center gap-2 rounded-lg py-3 text-xs font-semibold text-white transition-all duration-150 brightness-50 hover:brightness-100 focus:outline-none active:scale-95"
+            >
+              <EditIcon2 className="h-5 w-5" />
+              <span>Edit</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDeleteUserConfirm(true)}
+              className="flex flex-col items-center justify-center gap-2 rounded-lg py-3 text-xs font-semibold text-white transition-all duration-150 brightness-50 hover:brightness-100 focus:outline-none active:scale-95"
+            >
+              <TrashIcon className="h-5 w-5" />
+              <span>Delete</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowLogoutConfirm(true)}
+              className="flex flex-col items-center justify-center gap-2 rounded-lg py-3 text-xs font-semibold text-white transition-all duration-150 brightness-50 hover:brightness-100 focus:outline-none active:scale-95"
+            >
+              <LogoutIcon className="h-5 w-5" />
+              <span>Log out</span>
+            </button>
           </div>
         </div>
-      ) : null}
-      {showLogoutConfirm ? (
-        <div
-          className="fixed inset-0 z-[65] flex items-center justify-center bg-black/60 px-4 backdrop-blur-md"
-          onClick={() => setShowLogoutConfirm(false)}
-          aria-hidden="true"
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="logout-confirm-title"
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d0d0f] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center gap-3">
-              <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">Confirm Logout</p>
-                <h3 id="logout-confirm-title" className="mt-1 text-xl font-semibold text-white">
-                  Are you sure you want to logout?
-                </h3>
-              </div>
-            </div>
+      </ModalShell>
 
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setShowLogoutConfirm(false)}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.07] active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-red-500 px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-rose-400/50 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      {/* ================================================================ */}
+      {/* Logout confirm                                                    */}
+      {/* ================================================================ */}
+      <ConfirmDialog
+        open={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        eyebrow="Confirm logout"
+        title="Are you sure you want to log out?"
+        confirmLabel="Log out"
+        pendingLabel="Logging out..."
+        onConfirm={handleLogout}
+        pending={false}
+        tone="danger"
+      />
 
-      {pendingDeleteChat ? (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-4 backdrop-blur-md">
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="delete-chat-title"
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d0d0f] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
-          >
-            <div className="mb-4 flex items-center gap-3">
-              <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">Confirm deletion</p>
-                <h3 id="delete-chat-title" className="mt-1 text-xl font-semibold text-white">
-                  Are you sure you want to delete it?
-                </h3>
-              </div>
-            </div>
-
-            <p className="text-sm leading-6 text-zinc-500">
+      {/* ================================================================ */}
+      {/* Delete chat confirm                                               */}
+      {/* ================================================================ */}
+      <ConfirmDialog
+        open={Boolean(pendingDeleteChat)}
+        onClose={cancelDeleteChat}
+        eyebrow="Confirm deletion"
+        title="Are you sure you want to delete it?"
+        description={
+          pendingDeleteChat ? (
+            <>
               This will permanently remove{" "}
               <span className="text-zinc-300">
                 <InlineMarkdownText content={pendingDeleteChat.title} fallback="this chat" />
               </span>{" "}
               and its messages.
-            </p>
+            </>
+          ) : null
+        }
+        confirmLabel="Delete"
+        pendingLabel="Deleting..."
+        onConfirm={confirmDeleteChat}
+        pending={Boolean(deletingChatId)}
+        tone="danger"
+      />
 
-            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={cancelDeleteChat}
-                disabled={Boolean(deletingChatId)}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.07] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmDeleteChat}
-                disabled={Boolean(deletingChatId)}
-                className="inline-flex h-11 items-center justify-center rounded-full bg-rose-500 px-5 text-sm font-semibold text-white transition-all duration-150 hover:bg-rose-400 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/50"
-              >
-                {deletingChatId ? "Deleting..." : "Delete"}
-              </button>
-            </div>
+      {/* ================================================================ */}
+      {/* Rename chat                                                       */}
+      {/* ================================================================ */}
+      <ModalShell open={Boolean(editingChatId)} onClose={closeEditChatTitle} labelledBy="edit-chat-title" size="sm">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">Edit chat title</p>
+            <h3 id="edit-chat-title" className="mt-1 text-lg font-semibold text-white sm:text-xl">
+              Rename this conversation
+            </h3>
           </div>
         </div>
-      ) : null}
 
-      {editingChatId ? (
-        <div className="fixed inset-0 z-[72] flex items-center justify-center bg-black/60 px-4 backdrop-blur-md" onClick={closeEditChatTitle}>
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="edit-chat-title"
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d0d0f] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center gap-3">
-              <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">Edit chat title</p>
-                <h3 id="edit-chat-title" className="mt-1 text-xl font-semibold text-white">
-                  Rename this conversation
-                </h3>
-              </div>
-            </div>
+        <form onSubmit={saveChatTitle} className="space-y-4">
+          <div>
+            <label htmlFor="chat-title-input" className="mb-2 block text-sm text-zinc-400">
+              New chat title
+            </label>
+            <input
+              id="chat-title-input"
+              type="text"
+              value={editTitleValue}
+              onChange={(event) => setEditTitleValue(event.target.value)}
+              autoFocus
+              className="w-full rounded-xl border border-white/[0.08] bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-white/25 focus:ring-2 focus:ring-white/10"
+              placeholder="Enter a new title"
+            />
+          </div>
 
-            <form onSubmit={saveChatTitle} className="space-y-4">
-              <div>
-                <label htmlFor="chat-title-input" className="mb-2 block text-sm text-zinc-400">
-                  New chat title
-                </label>
-                <input
-                  id="chat-title-input"
-                  type="text"
-                  value={editTitleValue}
-                  onChange={(event) => setEditTitleValue(event.target.value)}
-                  autoFocus
-                  className="w-full rounded-xl border border-white/[0.08] bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-white/25 focus:ring-2 focus:ring-white/10"
-                  placeholder="Enter a new title"
-                />
-              </div>
+          <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end sm:gap-3">
+            <button
+              type="button"
+              onClick={closeEditChatTitle}
+              disabled={savingChatTitle}
+              className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.07] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={savingChatTitle || !editTitleValue.trim()}
+              className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-black transition-all duration-150 hover:bg-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            >
+              {savingChatTitle ? "Saving..." : "Update title"}
+            </button>
+          </div>
+        </form>
+      </ModalShell>
 
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={closeEditChatTitle}
-                  disabled={savingChatTitle}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.07] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingChatTitle || !editTitleValue.trim()}
-                  className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-black transition-all duration-150 hover:bg-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-                >
-                  {savingChatTitle ? "Saving..." : "Update title"}
-                </button>
-              </div>
-            </form>
+      {/* ================================================================ */}
+      {/* Edit user name                                                    */}
+      {/* ================================================================ */}
+      <ModalShell open={editingUserName} onClose={handleCancelEditUserName} labelledBy="edit-username-title" size="sm">
+        <div className="mb-4 flex items-center gap-3">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">Edit your name</p>
+            <h3 id="edit-username-title" className="mt-1 text-lg font-semibold text-white sm:text-xl">
+              Update your name
+            </h3>
           </div>
         </div>
-      ) : null}
 
-      {editingUserName ? (
-        <div className="fixed inset-0 z-[72] flex items-center justify-center bg-black/60 px-4 backdrop-blur-md" onClick={handleCancelEditUserName}>
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="edit-username-title"
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d0d0f] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center gap-3">
-              <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">Edit your name</p>
-                <h3 id="edit-username-title" className="mt-1 text-xl font-semibold text-white">
-                  Update your name
-                </h3>
-              </div>
-            </div>
-
-            <form onSubmit={handleUpdateUserName} className="space-y-4">
-              <div>
-                <label htmlFor="username-input" className="mb-2 block text-sm text-zinc-400">
-                  New Name
-                </label>
-                <input
-                  id="username-input"
-                  type="text"
-                  value={newUserName}
-                  onChange={(event) => setNewUserName(event.target.value)}
-                  autoFocus
-                  disabled={savingUserName}
-                  className="w-full rounded-xl border border-white/[0.08] bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-white/25 focus:ring-2 focus:ring-white/10 disabled:opacity-50"
-                  placeholder="Enter your new name"
-                />
-              </div>
-
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={handleCancelEditUserName}
-                  disabled={savingUserName}
-                  className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.07] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingUserName || !newUserName.trim()}
-                  className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-black transition-all duration-150 hover:bg-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-                >
-                  {savingUserName ? "Saving..." : "Update"}
-                </button>
-              </div>
-            </form>
+        <form onSubmit={handleUpdateUserName} className="space-y-4">
+          <div>
+            <label htmlFor="username-input" className="mb-2 block text-sm text-zinc-400">
+              New name
+            </label>
+            <input
+              id="username-input"
+              type="text"
+              value={newUserName}
+              onChange={(event) => setNewUserName(event.target.value)}
+              autoFocus
+              disabled={savingUserName}
+              className="w-full rounded-xl border border-white/[0.08] bg-black/30 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-zinc-600 focus:border-white/25 focus:ring-2 focus:ring-white/10 disabled:opacity-50"
+              placeholder="Enter your new name"
+            />
           </div>
-        </div>
-      ) : null}
 
-      {showDeleteUserConfirm ? (
-        <div
-          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 px-4 backdrop-blur-md"
-          onClick={() => setShowDeleteUserConfirm(false)}
-        >
-          <div
-            className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0d0d0f] p-6 shadow-[0_30px_90px_rgba(0,0,0,0.6)]"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-4 flex items-center gap-3">
-              <div className="min-w-0">
-                <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">Delete User</p>
-                <h3 id="delete-user-title" className="mt-1 text-xl font-semibold text-white">
-                  Are you sure you want to delete your account?
-                </h3>
-              </div>
-            </div>
-
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setShowDeleteUserConfirm(false)}
-                className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.07] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  setDeletingUser(true);
-                  await deleteUser();
-                  setDeletingUser(false);
-                  setShowDeleteUserConfirm(false);
-                }}
-                disabled={deletingUser}
-                className="inline-flex h-11 items-center justify-center rounded-full bg-red-500 px-5 text-sm font-semibold text-white transition-all duration-150 hover:bg-red-600 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
-              >
-                {deletingUser ? "Deleting..." : "Delete Account"}
-              </button>
-            </div>
+          <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end sm:gap-3">
+            <button
+              type="button"
+              onClick={handleCancelEditUserName}
+              disabled={savingUserName}
+              className="inline-flex h-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] px-5 text-sm font-medium text-zinc-200 transition-colors duration-150 hover:border-white/20 hover:bg-white/[0.07] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={savingUserName || !newUserName.trim()}
+              className="inline-flex h-11 items-center justify-center rounded-full bg-white px-5 text-sm font-semibold text-black transition-all duration-150 hover:bg-zinc-200 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+            >
+              {savingUserName ? "Saving..." : "Update"}
+            </button>
           </div>
-        </div>
-      ) : null}
+        </form>
+      </ModalShell>
 
+      {/* ================================================================ */}
+      {/* Delete account confirm                                           */}
+      {/* ================================================================ */}
+      <ConfirmDialog
+        open={showDeleteUserConfirm}
+        onClose={() => setShowDeleteUserConfirm(false)}
+        eyebrow="Delete user"
+        title="Are you sure you want to delete your account?"
+        confirmLabel="Delete account"
+        pendingLabel="Deleting..."
+        onConfirm={async () => {
+          setDeletingUser(true)
+          await deleteUser()
+          setDeletingUser(false)
+          setShowDeleteUserConfirm(false)
+        }}
+        pending={deletingUser}
+        tone="danger"
+      />
     </main>
   )
 }
