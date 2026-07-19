@@ -3,12 +3,11 @@ import { useSelector } from "react-redux"
 import { useChat } from "../hooks/useChat"
 import { createPortal } from "react-dom"
 import TypingIndicator from "../components/TypingIndicator"
-import { Send } from "lucide-react"
+import { Send,Mic,MicOff } from "lucide-react"
 import { useAuth } from "../../auth/hooks/useAuth"
 import { useUser } from "../hooks/useUser"
 import {
   SparklesIcon,
-
   MicrophoneIcon,
   ArrowUpIcon,
 } from "@heroicons/react/24/outline";
@@ -231,223 +230,27 @@ function MarkdownMessage({ content }) {
   return <div className="space-y-2 text-sm leading-6 text-inherit">{blocks}</div>
 }
 
-function ChatBubbleIcon({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path
-        d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.2 3.5a.6.6 0 0 1-.98-.46V16h-.32A2.5 2.5 0 0 1 4 13.5v-8Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
+// ================================================================
+// Icon components
+// ================================================================
 
-function PlusIcon({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function TrashIcon({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path
-        d="M9 3.75h6m-8.25 3h10.5m-9.75 0 .75 11.25A1.5 1.5 0 0 0 9.75 19.5h4.5a1.5 1.5 0 0 0 1.5-1.5l.75-11.25M10.5 9.75v6m3-6v6"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-function DotsIcon({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <circle cx="6" cy="12" r="1.6" fill="currentColor" />
-      <circle cx="12" cy="12" r="1.6" fill="currentColor" />
-      <circle cx="18" cy="12" r="1.6" fill="currentColor" />
-    </svg>
-  )
-}
-
-function EditIcon({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path
-        d="M4.75 19.25h3.6l9.1-9.1a1.5 1.5 0 0 0 0-2.12l-1.48-1.48a1.5 1.5 0 0 0-2.12 0l-9.1 9.1v3.6Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path d="m13.5 6.5 4 4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  )
-}
-function LogoutIcon({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path
-        d="M10 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h3"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M14 8l5 4-5 4"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M9 12h10"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-function EditIcon2({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <rect
-        x="3.5"
-        y="3.5"
-        width="17"
-        height="17"
-        rx="3"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <path
-        d="M8 16.5l1-.2 6.7-6.7a1.4 1.4 0 0 0 0-2l-.3-.3a1.4 1.4 0 0 0-2 0L6.7 14l-.2 1.5L8 16.5Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function CopyIcon({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <rect
-        x="8"
-        y="8"
-        width="10"
-        height="10"
-        rx="2"
-        stroke="currentColor"
-        strokeWidth="1.6"
-      />
-      <path
-        d="M6 15.5h-.5A1.5 1.5 0 0 1 4 14V5.5A1.5 1.5 0 0 1 5.5 4H14a1.5 1.5 0 0 1 1.5 1.5V6"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
-}
-
-function CloseIcon({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function SendIcon({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path
-        d="M4.5 12 19.5 4.5 15 19.5l-3.4-6.1L4.5 12Z"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
-  )
-}
-function ArrowLeftIcon({ className }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      className={className}
-      aria-hidden="true"
-    >
-      <path
-        d="M19 12H5M12 19l-7-7 7-7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SearchGlassIcon({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.7" />
-      <path d="m20 20-4.3-4.3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-function InfoIcon({ className }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path d="M12 17v-5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      <path d="M12 8.5h.01" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" />
-      <circle cx="12" cy="12" r="8.25" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-  )
-}
-
-function MenuIcon({ open }) {
-  return (
-    <span className="relative flex h-4 w-4 items-center justify-center">
-      <span
-        className={`absolute h-[1.5px] w-4 rounded-full bg-current transition-all duration-300 ease-[cubic-bezier(.22,1,.36,1)] ${open ? "translate-y-0 rotate-45" : "-translate-y-[5px] rotate-0"
-          }`}
-      />
-      <span
-        className={`absolute h-[1.5px] w-4 rounded-full bg-current transition-all duration-200 ease-out ${open ? "opacity-0 scale-x-0" : "opacity-100 scale-x-100"
-          }`}
-      />
-      <span
-        className={`absolute h-[1.5px] w-4 rounded-full bg-current transition-all duration-300 ease-[cubic-bezier(.22,1,.36,1)] ${open ? "translate-y-0 -rotate-45" : "translate-y-[5px] rotate-0"
-          }`}
-      />
-    </span>
-  )
-}
-
-function GlassAvatar({ label, size = "h-10 w-10", text = "text-sm" }) {
-  return (
-    <span
-      className={`inline-flex ${size} shrink-0 items-center justify-center rounded-full border border-white/10 bg-zinc-800 ${text} font-semibold text-zinc-200 transition-colors duration-200 hover:bg-zinc-700`}
-    >
-      {label}
-    </span>
-  )
-}
+import {
+  ChatBubbleIcon,
+  PlusIcon,
+  TrashIcon,
+  DotsIcon,
+  EditIcon,
+  EditIcon2,
+  LogoutIcon,
+  CopyIcon,
+  CloseIcon,
+  SendIcon,
+  ArrowLeftIcon,
+  SearchGlassIcon,
+  InfoIcon,
+  PinIcon,
+  MenuIcon,
+  GlassAvatar} from "../components/IconFunction.jsx"
 
 function MessageSkeletonList() {
   const skeletonMessages = [
@@ -495,24 +298,8 @@ function formatMessageActionTime(timestamp) {
   })
 }
 
-function trashIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4" aria-hidden="true">
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-      />
-    </svg>
-  )
-}
-
 /**
  * Reusable, breakpoint-aware modal shell.
- * Purely presentational — every modal below still owns its own
- * open/close state and handlers, this just keeps their markup
- * consistent and makes it trivial to drop in new dialogs later.
  */
 function ModalShell({ open, onClose, labelledBy, size = "md", children }) {
   if (!open) return null
@@ -540,8 +327,7 @@ function ModalShell({ open, onClose, labelledBy, size = "md", children }) {
 }
 
 /**
- * Shared confirm/destructive-action dialog. Wraps ModalShell so any
- * future "are you sure" flow can reuse it with two lines of JSX.
+ * Shared confirm/destructive-action dialog.
  */
 function ConfirmDialog({
   open,
@@ -595,6 +381,148 @@ function ConfirmDialog({
   )
 }
 
+// ================================================================
+// Sidebar section label
+// ================================================================
+function SidebarSectionLabel({ children }) {
+  return (
+    <div className="flex items-center gap-2 px-1 pb-1 pt-2">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.26em] text-zinc-600">{children}</span>
+      <span className="h-px flex-1 bg-white/[0.05]" />
+    </div>
+  )
+}
+
+// ================================================================
+// Chat list item — extracted for reuse in pinned + all sections
+// ================================================================
+function ChatListItem({
+  item,
+  index,
+  isActive,
+  isDeleting,
+  isMenuOpen,
+  isPinned,
+  drawerOpen,
+  chatSearchOpen,
+  menuPosition,
+  onSelect,
+  onOpenMenu,
+  onStartEdit,
+  onDelete,
+  onTogglePin,
+}) {
+  const delayClass = DELAYS[Math.min(index, DELAYS.length - 1)]
+
+  return (
+    <div
+      key={item._id}
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(item._id)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault()
+          onSelect(item._id)
+        }
+      }}
+      className={`group relative w-full rounded-xl border p-3.5 pr-11 text-left transition-all ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${
+        drawerOpen ? `translate-x-0 opacity-100 duration-300 ${delayClass}` : "-translate-x-2 opacity-0 duration-200"
+      } ${
+        isActive
+          ? "border-white/15 bg-white/[0.07]"
+          : "border-transparent bg-transparent hover:border-white/10 hover:bg-white/[0.04]"
+      }`}
+    >
+      {isActive && (
+        <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-white" />
+      )}
+
+      {/* Pin badge — small amber dot when pinned */}
+      {isPinned && (
+        <span
+          className="absolute right-10 top-3 flex h-4 w-4 items-center justify-center"
+          title="Pinned"
+          aria-label="Pinned"
+        >
+          <PinIcon className="h-3 w-3 text-amber-400" pinned />
+        </span>
+      )}
+
+      <button
+        type="button"
+        onClick={(event) => onOpenMenu(item._id, event)}
+        aria-label={`Chat actions for ${item.title || "chat"}`}
+        aria-expanded={isMenuOpen}
+        aria-haspopup="menu"
+        data-chat-menu-button="true"
+        className="absolute right-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-zinc-500 opacity-100 transition-all duration-150 hover:bg-white/[0.08] hover:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+      >
+        <DotsIcon className="h-4 w-4" />
+      </button>
+
+      {isMenuOpen && menuPosition
+        ? createPortal(
+          <div
+            data-chat-menu-panel="true"
+            role="menu"
+            aria-label="Chat actions"
+            style={{ top: menuPosition.top, left: Math.max(8, menuPosition.left) }}
+            className="fixed z-[200] w-44 rounded-xl border border-white/10 bg-[#141416] p-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            {/* Pin / Unpin */}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={(event) => {
+                event.stopPropagation()
+                onTogglePin(item._id)
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-white focus:outline-none focus:bg-white/[0.08]"
+            >
+              <PinIcon className="h-4 w-4 text-amber-400" pinned={isPinned} />
+              <span>{isPinned ? "Unpin" : "Pin"}</span>
+            </button>
+            {/* Rename */}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={(event) => onStartEdit(item, event)}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-white focus:outline-none focus:bg-white/[0.08]"
+            >
+              <EditIcon className="h-4 w-4 text-zinc-400" />
+              <span>Rename</span>
+            </button>
+            {/* Delete */}
+            <button
+              type="button"
+              role="menuitem"
+              onClick={(event) => onDelete(item._id, event)}
+              disabled={isDeleting}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-zinc-200 transition-colors hover:bg-rose-500/10 hover:text-rose-200 focus:outline-none focus:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <TrashIcon className="h-4 w-4 text-rose-400" />
+              <span>Delete</span>
+            </button>
+          </div>,
+          document.body
+        )
+        : null}
+
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-zinc-100">
+            <InlineMarkdownText content={item.title} fallback="New chat" />
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const PINNED_STORAGE_KEY = "perplexity_pinned_chats"
+
 const Dashboard = () => {
   const { initializeSocketConnection, deleteChat, getChats, getMessages, sendMessage, updateChatTitle } = useChat()
   const { handleLogout } = useAuth()
@@ -630,16 +558,45 @@ const Dashboard = () => {
   const [chatSearchOpen, setChatSearchOpen] = useState(false)
   const [chatSearchQuery, setChatSearchQuery] = useState("")
 
+  // ── Pin state (persisted to localStorage) ──────────────────────────
+  const [pinnedChatIds, setPinnedChatIds] = useState(() => {
+    try {
+      const stored = localStorage.getItem(PINNED_STORAGE_KEY)
+      return stored ? new Set(JSON.parse(stored)) : new Set()
+    } catch {
+      return new Set()
+    }
+  })
+
+  function togglePinChat(chatId) {
+    setPinnedChatIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(chatId)) {
+        next.delete(chatId)
+      } else {
+        next.add(chatId)
+      }
+      try {
+        localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify([...next]))
+      } catch {
+        // storage might be unavailable
+      }
+      // Close the menu
+      setMenuOpenChatId(null)
+      setMenuPosition(null)
+      return next
+    })
+  }
+
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
   const sidebarScrollRef = useRef(null)
   const chatSearchInputRef = useRef(null)
-  const formRef = useRef(null);
+  const formRef = useRef(null)
 
   function resizeInputHeight() {
     const inputElement = inputRef.current
     if (!inputElement) return
-
     const maxHeight = 160
     inputElement.style.height = "auto"
     inputElement.style.height = `${Math.min(inputElement.scrollHeight, maxHeight)}px`
@@ -652,9 +609,47 @@ const Dashboard = () => {
     requestAnimationFrame(() => chatSearchInputRef.current?.focus())
   }
 
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef(null)
+
   useEffect(() => {
-    initializeSocketConnection()
-  }, [initializeSocketConnection])
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) return
+
+    const recognition = new SpeechRecognition()
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.lang = "en-US"
+
+    recognition.onresult = (event) => {
+      let transcript = ""
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript
+      }
+      setInputValue(transcript)
+      resizeInputHeight()
+    }
+
+    recognition.onend = () => setIsListening(false)
+    recognition.onerror = () => setIsListening(false)
+    recognitionRef.current = recognition
+
+    return () => recognition.stop()
+  }, [])
+
+  const toggleListening = () => {
+    if (!recognitionRef.current) return
+    if (isListening) {
+      recognitionRef.current.stop()
+      setIsListening(false)
+    } else {
+      setInputValue("")
+      recognitionRef.current.start()
+      setIsListening(true)
+    }
+  }
+
+  useEffect(() => { initializeSocketConnection() }, [initializeSocketConnection])
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setMounted(true))
@@ -663,109 +658,68 @@ const Dashboard = () => {
 
   useEffect(() => {
     let mounted = true
-
     async function loadChats() {
       setLoadingChats(true)
       setError("")
-
       try {
         const data = await getChats()
         if (!mounted) return
-
-        const chatList = data.chats || []
-        setChats(chatList) 
-
+        setChats(data.chats || [])
       } catch (fetchError) {
         if (!mounted) return
         setError(fetchError.response?.data?.error || "Failed to load chats")
       } finally {
-        if (mounted) {
-          setLoadingChats(false)
-        }
+        if (mounted) setLoadingChats(false)
       }
     }
-
     loadChats()
-
-    return () => {
-      mounted = false
-    }
+    return () => { mounted = false }
   }, [getChats])
 
   useEffect(() => {
-    if (!activeChatId) {
-      setMessages([])
-      return
-    }
-
+    if (!activeChatId) { setMessages([]); return }
     let mounted = true
-
     async function loadMessages() {
       setLoadingMessages(true)
       setError("")
-
       try {
         const data = await getMessages(activeChatId)
         if (!mounted) return
-
         setMessages(data.messages || [])
       } catch (fetchError) {
         if (!mounted) return
         setError(fetchError.response?.data?.error || "Failed to load messages")
       } finally {
-        if (mounted) {
-          setLoadingMessages(false)
-        }
+        if (mounted) setLoadingMessages(false)
       }
     }
-
     loadMessages()
-
-    return () => {
-      mounted = false
-    }
+    return () => { mounted = false }
   }, [activeChatId, getMessages])
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages])
 
   useEffect(() => {
     if (!drawerOpen) return
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") setDrawerOpen(false)
-    }
-
+    function handleKeyDown(event) { if (event.key === "Escape") setDrawerOpen(false) }
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [drawerOpen])
 
   useEffect(() => {
-    if (!drawerOpen) {
-      setChatSearchOpen(false)
-      setChatSearchQuery("")
-    }
+    if (!drawerOpen) { setChatSearchOpen(false); setChatSearchQuery("") }
   }, [drawerOpen])
 
   useEffect(() => {
     if (!infoOpen) return
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") setInfoOpen(false)
-    }
-
+    function handleKeyDown(event) { if (event.key === "Escape") setInfoOpen(false) }
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [infoOpen])
 
   useEffect(() => {
     if (!showUserInfo) return
-
-    // Close the user info panel when the Escape key is pressed or when clicking outside of it
-    function handleKeyDown(event) {
-      if (event.key === "Escape") setShowUserInfo(false)
-    }
+    function handleKeyDown(event) { if (event.key === "Escape") setShowUserInfo(false) }
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [showUserInfo])
@@ -774,41 +728,29 @@ const Dashboard = () => {
     function handlePointerDown(event) {
       const target = event.target
       if (!(target instanceof Element)) return
-
       const insideMenuButton = target.closest("[data-chat-menu-button]")
       const insideMenuPanel = target.closest("[data-chat-menu-panel]")
-
       if (!insideMenuButton && !insideMenuPanel) {
         setMenuOpenChatId(null)
         setMenuPosition(null)
       }
     }
-
     document.addEventListener("mousedown", handlePointerDown)
     return () => document.removeEventListener("mousedown", handlePointerDown)
   }, [])
 
   useEffect(() => {
     if (!menuOpenChatId) return
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") setMenuOpenChatId(null)
-    }
-
+    function handleKeyDown(event) { if (event.key === "Escape") setMenuOpenChatId(null) }
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [menuOpenChatId])
 
   useEffect(() => {
     if (!chatSearchOpen) return
-
     function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        setChatSearchOpen(false)
-        setChatSearchQuery("")
-      }
+      if (event.key === "Escape") { setChatSearchOpen(false); setChatSearchQuery("") }
     }
-
     document.addEventListener("keydown", handleKeyDown)
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [chatSearchOpen])
@@ -818,21 +760,25 @@ const Dashboard = () => {
     [chats, activeChatId]
   )
 
+  // ── Pinned / unpinned split ─────────────────────────────────────────
+  const { pinnedChats, unpinnedChats } = useMemo(() => {
+    const pinned = []
+    const unpinned = []
+    for (const chat of chats) {
+      if (pinnedChatIds.has(chat._id)) pinned.push(chat)
+      else unpinned.push(chat)
+    }
+    return { pinnedChats: pinned, unpinnedChats: unpinned }
+  }, [chats, pinnedChatIds])
+
   function handleSidebarScroll(event) {
     const { scrollTop, scrollHeight, clientHeight } = event.target
-    setScrollState({
-      top: scrollTop,
-      atBottom: scrollTop + clientHeight >= scrollHeight - 4,
-    })
-    if (menuOpenChatId) {
-      setMenuOpenChatId(null)
-      setMenuPosition(null)
-    }
+    setScrollState({ top: scrollTop, atBottom: scrollTop + clientHeight >= scrollHeight - 4 })
+    if (menuOpenChatId) { setMenuOpenChatId(null); setMenuPosition(null) }
   }
 
   async function handleSendMessage(event) {
     event.preventDefault()
-
     const trimmedMessage = inputValue.trim()
     if (!trimmedMessage || sendingMessage) return
 
@@ -879,21 +825,14 @@ const Dashboard = () => {
 
   function openChatMenu(chatId, event) {
     event.stopPropagation()
-
-    if (menuOpenChatId === chatId) {
-      setMenuOpenChatId(null)
-      setMenuPosition(null)
-      return
-    }
-
+    if (menuOpenChatId === chatId) { setMenuOpenChatId(null); setMenuPosition(null); return }
     const rect = event.currentTarget.getBoundingClientRect()
-    setMenuPosition({ top: rect.bottom - 6, left: rect.right - 176 }) // 176px = w-44
+    setMenuPosition({ top: rect.bottom - 6, left: rect.right - 176 })
     setMenuOpenChatId(chatId)
   }
 
   function startEditChat(chat, event) {
     event.stopPropagation()
-
     setMenuOpenChatId(null)
     setEditingChatId(chat._id)
     setEditTitleValue(chat.title || "")
@@ -901,31 +840,20 @@ const Dashboard = () => {
 
   function handleDeleteChat(chatId, event) {
     event.stopPropagation()
-
     setMenuOpenChatId(null)
-
     if (deletingChatId) return
-
     setPendingDeleteChatId(chatId)
   }
 
   async function saveChatTitle(event) {
     event.preventDefault()
-
     if (!editingChatId || savingChatTitle) return
-
     const trimmedTitle = editTitleValue.trim()
-    if (!trimmedTitle) {
-      setError("Chat title cannot be empty")
-      return
-    }
-
+    if (!trimmedTitle) { setError("Chat title cannot be empty"); return }
     setSavingChatTitle(true)
     setError("")
-
     try {
       const data = await updateChatTitle(editingChatId, trimmedTitle)
-
       setChats((currentChats) =>
         currentChats.map((item) => (item._id === editingChatId ? { ...item, ...data.chat } : item))
       )
@@ -940,31 +868,28 @@ const Dashboard = () => {
 
   function closeEditChatTitle() {
     if (savingChatTitle) return
-
     setEditingChatId(null)
     setEditTitleValue("")
   }
 
   async function confirmDeleteChat() {
     if (!pendingDeleteChatId || deletingChatId) return
-
     const chatId = pendingDeleteChatId
-
     setDeletingChatId(chatId)
     setError("")
-
     try {
       await deleteChat(chatId)
-
       setChats((currentChats) => {
         const remainingChats = currentChats.filter((item) => item._id !== chatId)
-
-        if (activeChatId === chatId) {
-          setActiveChatId(remainingChats[0]?._id || null)
-          setMessages([])
-        }
-
+        if (activeChatId === chatId) { setActiveChatId(remainingChats[0]?._id || null); setMessages([]) }
         return remainingChats
+      })
+      // Also remove from pinned if pinned
+      setPinnedChatIds((prev) => {
+        const next = new Set(prev)
+        next.delete(chatId)
+        try { localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify([...next])) } catch {}
+        return next
       })
     } catch (deleteError) {
       setError(deleteError.response?.data?.error || "Failed to delete chat")
@@ -976,7 +901,6 @@ const Dashboard = () => {
 
   function cancelDeleteChat() {
     if (deletingChatId) return
-
     setPendingDeleteChatId(null)
   }
 
@@ -1013,16 +937,12 @@ const Dashboard = () => {
 
   function handleEditMessageDraft(message) {
     setInputValue(message.content || "")
-    requestAnimationFrame(() => {
-      resizeInputHeight()
-      inputRef.current?.focus()
-    })
+    requestAnimationFrame(() => { resizeInputHeight(); inputRef.current?.focus() })
   }
 
   async function handleCopyMessage(message) {
     const content = String(message.content || "")
     if (!content) return
-
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(content)
@@ -1037,7 +957,6 @@ const Dashboard = () => {
         document.execCommand("copy")
         document.body.removeChild(textarea)
       }
-
       setCopiedMessageId(message._id)
       window.setTimeout(() => {
         setCopiedMessageId((currentId) => (currentId === message._id ? null : currentId))
@@ -1054,21 +973,11 @@ const Dashboard = () => {
 
   async function handleUpdateUserName(event) {
     event.preventDefault()
-
     const trimmedName = newUserName.trim()
-    if (!trimmedName) {
-      setError("User name cannot be empty")
-      return
-    }
-
-    if (trimmedName === (user?.username || user?.name)) {
-      setEditingUserName(false)
-      return
-    }
-
+    if (!trimmedName) { setError("User name cannot be empty"); return }
+    if (trimmedName === (user?.username || user?.name)) { setEditingUserName(false); return }
     setSavingUserName(true)
     setError("")
-
     try {
       await updateUserName(trimmedName)
       setEditingUserName(false)
@@ -1087,14 +996,29 @@ const Dashboard = () => {
 
   const sidebarChats = chats
   const trimmedSearchQuery = chatSearchQuery.trim().toLowerCase()
+
+  // When searching, flatten all chats; otherwise use pinned/unpinned split
   const searchedChats = trimmedSearchQuery
     ? sidebarChats.filter((item) => (item.title || "New chat").toLowerCase().includes(trimmedSearchQuery))
-    : sidebarChats
+    : null
+
   const pendingDeleteChat = pendingDeleteChatId
     ? chats.find((item) => item._id === pendingDeleteChatId) || null
     : null
   const userLabel = user?.username || user?.name || "Guest"
   const userInitial = userLabel.charAt(0).toUpperCase()
+
+  // Shared props for ChatListItem
+  const chatListItemProps = {
+    drawerOpen,
+    chatSearchOpen,
+    menuPosition,
+    onSelect: chatSearchOpen ? handleSelectSearchedChat : handleSelectChat,
+    onOpenMenu: openChatMenu,
+    onStartEdit: startEditChat,
+    onDelete: handleDeleteChat,
+    onTogglePin: togglePinChat,
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#0a0a0b] text-zinc-100">
@@ -1127,29 +1051,54 @@ const Dashboard = () => {
         >
           <MenuIcon open={drawerOpen} />
         </button>
-      <div className="flex flex-col gap-2">
-        <button
-          type="button"
-          onClick={handleNewChat}
-          title="New chat"
-          className="flex h-9 w-9 items-center justify-center rounded-xl  bg-white/[0.03] text-zinc-300 transition-all duration-150 hover:border-white/20 hover:bg-[#121212] hover:text-white active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-        >
-          <PlusIcon className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={openChatSearch}
-          title="search chats"
-          className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.03] text-zinc-300 transition-all duration-150 hover:border-white/20 hover:bg-[#121212] hover:text-white active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
-        >
-          <SearchGlassIcon className="h-4 w-4" />
-        </button>
+
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={handleNewChat}
+            title="New chat"
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.03] text-zinc-300 transition-all duration-150 hover:border-white/20 hover:bg-[#121212] hover:text-white active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+          >
+            <PlusIcon className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={openChatSearch}
+            title="Search chats"
+            className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.03] text-zinc-300 transition-all duration-150 hover:border-white/20 hover:bg-[#121212] hover:text-white active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+          >
+            <SearchGlassIcon className="h-4 w-4" />
+          </button>
         </div>
 
         <div className="h-px w-8 bg-white/5" />
 
         <div className="mt-4 flex w-full flex-1 flex-col items-center gap-2 overflow-y-auto overflow-x-hidden">
-          {sidebarChats.slice(0, 8).map((item) => {
+          {/* Pinned chats first in rail */}
+          {pinnedChats.slice(0, 4).map((item) => {
+            const isActive = item._id === activeChatId
+            return (
+              <button
+                key={`pin-rail-${item._id}`}
+                type="button"
+                title={`[Pinned] ${item.title || "Chat"}`}
+                onClick={() => handleSelectChat(item._id)}
+                className={`relative flex h-9 w-9 shrink-0 items-center border justify-center rounded-xl transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${isActive
+                  ? "border-amber-400/40 bg-amber-400/10 text-amber-300"
+                  : "border-amber-400/20 hover:bg-amber-400/10 text-amber-500/60 hover:text-amber-300"
+                  }`}
+              >
+                {isActive && <span className="absolute -left-2 h-5 w-[3px] rounded-full bg-amber-400" />}
+                <PinIcon className="h-3.5 w-3.5" pinned />
+              </button>
+            )
+          })}
+
+          {pinnedChats.length > 0 && unpinnedChats.length > 0 && (
+            <div className="h-px w-6 bg-white/[0.06] my-1" />
+          )}
+
+          {unpinnedChats.slice(0, 8 - Math.min(pinnedChats.length, 4)).map((item) => {
             const isActive = item._id === activeChatId
             return (
               <button
@@ -1162,9 +1111,7 @@ const Dashboard = () => {
                   : "border-white/[0.06] hover:bg-[#121212] text-zinc-500 hover:border-white/15 hover:text-zinc-200"
                   }`}
               >
-                {isActive && (
-                  <span className="absolute -left-2 h-5 w-[3px] rounded-full bg-white" />
-                )}
+                {isActive && <span className="absolute -left-2 h-5 w-[3px] rounded-full bg-white" />}
                 <ChatBubbleIcon className="h-4 w-4" />
               </button>
             )
@@ -1194,7 +1141,7 @@ const Dashboard = () => {
       />
 
       {/* ================================================================ */}
-      {/* Expanded drawer — overlay on every breakpoint, width scales up    */}
+      {/* Expanded drawer                                                   */}
       {/* ================================================================ */}
       <aside
         role="dialog"
@@ -1215,7 +1162,6 @@ const Dashboard = () => {
               <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-500">Perplexity</p>
               <h1 className="mt-1 truncate text-xl font-semibold text-white sm:text-2xl">Chats</h1>
             </div>
-
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
@@ -1298,115 +1244,76 @@ const Dashboard = () => {
                 <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-zinc-500">
                   No chats yet. Start a new conversation from the composer.
                 </div>
-              ) : searchedChats.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-zinc-500">
-                  No chats match "{chatSearchQuery.trim()}".
-                </div>
-              ) : (
-                searchedChats.map((item, index) => {
-                  const isActive = item._id === activeChatId
-                  const isDeleting = deletingChatId === item._id
-                  const isMenuOpen = menuOpenChatId === item._id
-                  const delayClass = DELAYS[Math.min(index, DELAYS.length - 1)]
-
-                  return (
-                    <div
+              ) : searchedChats !== null ? (
+                // ── Search results (flat list) ──────────────────────────
+                searchedChats.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4 text-sm text-zinc-500">
+                    No chats match "{chatSearchQuery.trim()}".
+                  </div>
+                ) : (
+                  searchedChats.map((item, index) => (
+                    <ChatListItem
                       key={item._id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => (chatSearchOpen ? handleSelectSearchedChat(item._id) : handleSelectChat(item._id))}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault()
-                          if (chatSearchOpen) {
-                            handleSelectSearchedChat(item._id)
-                          } else {
-                            handleSelectChat(item._id)
-                          }
-                        }
-                      }}
-                      className={`group relative w-full rounded-xl border p-3.5 pr-11 text-left transition-all ease-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 ${drawerOpen ? `translate-x-0 opacity-100 duration-300 ${delayClass}` : "-translate-x-2 opacity-0 duration-200"
-                        } ${isActive
-                          ? "border-white/15 bg-white/[0.07]"
-                          : "border-transparent bg-transparent hover:border-white/10 hover:bg-white/[0.04]"
-                        }`}
-                    >
-                      {isActive && (
-                        <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full bg-white" />
+                      item={item}
+                      index={index}
+                      isActive={item._id === activeChatId}
+                      isDeleting={deletingChatId === item._id}
+                      isMenuOpen={menuOpenChatId === item._id}
+                      isPinned={pinnedChatIds.has(item._id)}
+                      {...chatListItemProps}
+                    />
+                  ))
+                )
+              ) : (
+                // ── Normal view: pinned then all ────────────────────────
+                <>
+                  {pinnedChats.length > 0 && (
+                    <>
+                      <SidebarSectionLabel>Pinned</SidebarSectionLabel>
+                      {pinnedChats.map((item, index) => (
+                        <ChatListItem
+                          key={`pinned-${item._id}`}
+                          item={item}
+                          index={index}
+                          isActive={item._id === activeChatId}
+                          isDeleting={deletingChatId === item._id}
+                          isMenuOpen={menuOpenChatId === item._id}
+                          isPinned
+                          {...chatListItemProps}
+                        />
+                      ))}
+                      {unpinnedChats.length > 0 && (
+                        <SidebarSectionLabel>All chats</SidebarSectionLabel>
                       )}
-
-                      <button
-                        type="button"
-                        onClick={(event) => openChatMenu(item._id, event)}
-                        aria-label={`Chat actions for ${item.title || "chat"}`}
-                        aria-expanded={isMenuOpen}
-                        aria-haspopup="menu"
-                        data-chat-menu-button="true"
-                        className="absolute right-2.5 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-zinc-500 opacity-100 transition-all duration-150 hover:bg-white/[0.08] hover:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
-                      >
-                        <DotsIcon className="h-4 w-4" />
-                      </button>
-
-                      {isMenuOpen && menuPosition
-                        ? createPortal(
-                          <div
-                            data-chat-menu-panel="true"
-                            role="menu"
-                            aria-label="Chat actions"
-                            style={{ top: menuPosition.top, left: Math.max(8, menuPosition.left) }}
-                            className="fixed z-[200] w-44 rounded-xl border border-white/10 bg-[#141416] p-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)]"
-                            onClick={(event) => event.stopPropagation()}
-                          >
-                            <button
-                              type="button"
-                              role="menuitem"
-                              onClick={(event) => startEditChat(item, event)}
-                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-zinc-200 transition-colors hover:bg-white/[0.08] hover:text-white focus:outline-none focus:bg-white/[0.08]"
-                            >
-                              <EditIcon className="h-4 w-4 text-zinc-400" />
-                              <span>Rename</span>
-                            </button>
-                            <button
-                              type="button"
-                              role="menuitem"
-                              onClick={(event) => handleDeleteChat(item._id, event)}
-                              disabled={isDeleting}
-                              className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-left text-sm text-zinc-200 transition-colors hover:bg-rose-500/10 hover:text-rose-200 focus:outline-none focus:bg-rose-500/10 disabled:cursor-not-allowed disabled:opacity-50"
-                            >
-                              <TrashIcon className="h-4 w-4 text-rose-400" />
-                              <span>Delete</span>
-                            </button>
-                          </div>,
-                          document.body
-                        )
-                        : null}
-
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium text-zinc-100">
-                            <InlineMarkdownText content={item.title} fallback="New chat" />
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })
+                    </>
+                  )}
+                  {unpinnedChats.map((item, index) => (
+                    <ChatListItem
+                      key={item._id}
+                      item={item}
+                      index={index}
+                      isActive={item._id === activeChatId}
+                      isDeleting={deletingChatId === item._id}
+                      isMenuOpen={menuOpenChatId === item._id}
+                      isPinned={false}
+                      {...chatListItemProps}
+                    />
+                  ))}
+                </>
               )}
             </div>
           </div>
 
-          {/* scroll gradient fades */}
+          {/* Scroll gradient fades */}
           <div
-            className={`pointer-events-none absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-[#0d0d0f] to-transparent transition-opacity duration-300 ${scrollState.top > 4 ? "opacity-100" : "opacity-0"
-              }`}
+            className={`pointer-events-none absolute inset-x-0 top-0 h-8 bg-gradient-to-b from-[#0d0d0f] to-transparent transition-opacity duration-300 ${scrollState.top > 4 ? "opacity-100" : "opacity-0"}`}
           />
           <div
-            className={`pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0d0d0f] to-transparent transition-opacity duration-300 ${scrollState.atBottom ? "opacity-0" : "opacity-100"
-              }`}
+            className={`pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0d0d0f] to-transparent transition-opacity duration-300 ${scrollState.atBottom ? "opacity-0" : "opacity-100"}`}
           />
         </div>
 
-        {/* Drawer footer — account entry point */}
+        {/* Drawer footer */}
         <div
           className={`relative shrink-0 border-t border-white/[0.06] p-3 transition-all duration-300 ease-out sm:p-4 ${drawerOpen ? "translate-y-0 opacity-100 delay-150" : "translate-y-3 opacity-0"
             }`}
@@ -1443,16 +1350,18 @@ const Dashboard = () => {
       )}
 
       {/* ================================================================ */}
-      {/* Main content — offset by the persistent rail on md+ only         */}
+      {/* Main content                                                      */}
       {/* ================================================================ */}
       <div className="fixed inset-0 flex flex-col md:pl-16 lg:pl-[72px]">
         <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
           <header className="sticky top-0 z-20 flex-shrink-0 relative bg-[#0a0a0b]/80 px-4 py-3.5 backdrop-blur-xl sm:px-5 sm:py-4 lg:px-8">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="min-w-0 truncate pl-14 text-sm font-medium text-white sm:text-base md:pl-2">
+              <h2 className="min-w-0 truncate pl-14 text-sm font-medium text-white sm:text-base md:pl-2 flex items-center gap-2">
+                {activeChat && pinnedChatIds.has(activeChat._id) && (
+                  <PinIcon className="h-3.5 w-3.5 shrink-0 text-amber-400" pinned />
+                )}
                 <InlineMarkdownText content={activeChat?.title} fallback="New conversation" />
               </h2>
-
               <button
                 type="button"
                 onClick={() => setInfoOpen(true)}
@@ -1466,7 +1375,7 @@ const Dashboard = () => {
 
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-3  sm:px-6 lg:px-8 pb-26">
+              <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 pt-1 pb-26">
                 <div className="mx-auto w-full max-w-3xl">
                   {error ? (
                     <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/[0.06] px-4 py-3 text-sm text-rose-300">
@@ -1483,7 +1392,6 @@ const Dashboard = () => {
                         <p className="mt-2 text-sm leading-6 text-zinc-500">
                           Pick a chat from the sidebar or start a new one.
                         </p>
-                        {/* Suggestion chips */}
                         <div className="mt-6 flex flex-wrap justify-center gap-2 sm:gap-3">
                           {["MERN Stack", "LangChain", "WebRTC", "AI Integration"].map((item) => (
                             <button
@@ -1548,7 +1456,6 @@ const Dashboard = () => {
                                 {copiedMessageId === message._id ? (
                                   <span className="whitespace-nowrap px-1 text-zinc-300">Copied</span>
                                 ) : null}
-
                               </div>
                             </div>
                           </div>
@@ -1568,6 +1475,7 @@ const Dashboard = () => {
                   )}
                 </div>
               </div>
+
               {/* Composer */}
               <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-shrink-0 justify-center border-t border-white/[0.04] px-3 py-3 backdrop-blur-xl sm:px-6 sm:py-4 lg:px-8">
                 <form onSubmit={handleSendMessage} ref={formRef} className="w-xl max-w-xl p-0 sm:max-w-2xl sm:p-1 lg:max-w-3xl">
@@ -1579,21 +1487,28 @@ const Dashboard = () => {
                         setInputValue(event.target.value)
                         resizeInputHeight()
                       }}
-                        onKeyDown={(event) => {
-                        if (
-                          event.key === "Enter" &&
-                          !event.shiftKey &&
-                          !sendingMessage &&
-                          inputValue.trim()
-                        ) {
-                          event.preventDefault();
-                          formRef.current?.requestSubmit();
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.shiftKey && !sendingMessage && inputValue.trim()) {
+                          event.preventDefault()
+                          formRef.current?.requestSubmit()
                         }
                       }}
                       rows={1}
                       placeholder="Ask something or start a new chat..."
                       className="min-h-11 flex-1 resize-none overflow-hidden rounded-xl bg-[#131316] px-3 py-2.5 text-sm leading-6 text-white outline-none placeholder:text-zinc-600 transition-colors duration-150 scrollbar-thumb-zinc-700 scrollbar-track-transparent scrollbar-thin sm:min-h-12 sm:px-4 sm:py-3"
                     />
+                    <button
+                      type="button"
+                      onClick={toggleListening}
+                      aria-label={isListening ? "Stop recording" : "Start voice input"}
+                      className={`relative flex h-9 w-10 flex-shrink-0 items-center justify-center rounded-full transition-all duration-150 ease-out active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:w-11 ${
+                        isListening
+                          ? "bg-red-500 text-white animate-pulse"
+                          : "bg-transparent text-zinc-200 hover:text-zinc-100"
+                      }`}
+                    >
+                      {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    </button>
                     <button
                       type="submit"
                       disabled={sendingMessage || !inputValue.trim()}
@@ -1630,21 +1545,16 @@ const Dashboard = () => {
             <CloseIcon className="h-4 w-4" />
           </button>
         </div>
-
         <div className="mt-5 space-y-4 text-sm leading-6 text-zinc-400">
           <p>
             This app is a chat workspace for creating conversations, reading message history,
             and keeping long threads usable in the right-hand panel.
           </p>
-
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
             <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">Creator</p>
             <p className="mt-2 text-base font-semibold text-white">Ankan Nandi</p>
-            <p className="mt-1 text-sm text-zinc-500">
-              Built for the Project Perplexity workspace.
-            </p>
+            <p className="mt-1 text-sm text-zinc-500">Built for the Project Perplexity workspace.</p>
           </div>
-
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
             <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">What it does</p>
             <ul className="mt-2 space-y-1 text-zinc-400">
@@ -1676,13 +1586,11 @@ const Dashboard = () => {
             <CloseIcon className="h-4 w-4" />
           </button>
         </div>
-
         <div className="mt-5 space-y-4 text-sm leading-6 text-zinc-400">
           <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
             <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">Email</p>
             <p className="mt-2 truncate text-base font-semibold text-white">{user?.email || "N/A"}</p>
           </div>
-
           <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:gap-3 sm:p-4">
             <button
               type="button"
@@ -1712,9 +1620,7 @@ const Dashboard = () => {
         </div>
       </ModalShell>
 
-      {/* ================================================================ */}
-      {/* Logout confirm                                                    */}
-      {/* ================================================================ */}
+      {/* Logout confirm */}
       <ConfirmDialog
         open={showLogoutConfirm}
         onClose={() => setShowLogoutConfirm(false)}
@@ -1727,9 +1633,7 @@ const Dashboard = () => {
         tone="danger"
       />
 
-      {/* ================================================================ */}
-      {/* Delete chat confirm                                               */}
-      {/* ================================================================ */}
+      {/* Delete chat confirm */}
       <ConfirmDialog
         open={Boolean(pendingDeleteChat)}
         onClose={cancelDeleteChat}
@@ -1753,9 +1657,7 @@ const Dashboard = () => {
         tone="danger"
       />
 
-      {/* ================================================================ */}
-      {/* Rename chat                                                       */}
-      {/* ================================================================ */}
+      {/* Rename chat */}
       <ModalShell open={Boolean(editingChatId)} onClose={closeEditChatTitle} labelledBy="edit-chat-title" size="sm">
         <div className="mb-4 flex items-center gap-3">
           <div className="min-w-0">
@@ -1765,12 +1667,9 @@ const Dashboard = () => {
             </h3>
           </div>
         </div>
-
         <form onSubmit={saveChatTitle} className="space-y-4">
           <div>
-            <label htmlFor="chat-title-input" className="mb-2 block text-sm text-zinc-400">
-              New chat title
-            </label>
+            <label htmlFor="chat-title-input" className="mb-2 block text-sm text-zinc-400">New chat title</label>
             <input
               id="chat-title-input"
               type="text"
@@ -1781,7 +1680,6 @@ const Dashboard = () => {
               placeholder="Enter a new title"
             />
           </div>
-
           <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end sm:gap-3">
             <button
               type="button"
@@ -1802,9 +1700,7 @@ const Dashboard = () => {
         </form>
       </ModalShell>
 
-      {/* ================================================================ */}
-      {/* Edit user name                                                    */}
-      {/* ================================================================ */}
+      {/* Edit user name */}
       <ModalShell open={editingUserName} onClose={handleCancelEditUserName} labelledBy="edit-username-title" size="sm">
         <div className="mb-4 flex items-center gap-3">
           <div className="min-w-0">
@@ -1814,12 +1710,9 @@ const Dashboard = () => {
             </h3>
           </div>
         </div>
-
         <form onSubmit={handleUpdateUserName} className="space-y-4">
           <div>
-            <label htmlFor="username-input" className="mb-2 block text-sm text-zinc-400">
-              New name
-            </label>
+            <label htmlFor="username-input" className="mb-2 block text-sm text-zinc-400">New name</label>
             <input
               id="username-input"
               type="text"
@@ -1831,7 +1724,6 @@ const Dashboard = () => {
               placeholder="Enter your new name"
             />
           </div>
-
           <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end sm:gap-3">
             <button
               type="button"
@@ -1852,9 +1744,7 @@ const Dashboard = () => {
         </form>
       </ModalShell>
 
-      {/* ================================================================ */}
-      {/* Delete account confirm                                           */}
-      {/* ================================================================ */}
+      {/* Delete account confirm */}
       <ConfirmDialog
         open={showDeleteUserConfirm}
         onClose={() => setShowDeleteUserConfirm(false)}
