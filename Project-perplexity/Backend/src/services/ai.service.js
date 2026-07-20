@@ -32,7 +32,7 @@ const searchTool = tool(
 const agent = createAgent({
     model,
     tools: [searchTool],
-    systemPrompt: `You are a helpful assistant. Today's date is ${new Date().toDateString()}.
+    systemPrompt: `You are a helpful assistant. Today's date is ${new Date().toDateString()}.${new Date().toLocaleTimeString()}.
     Use the web_search tool whenever the user asks about current events, news, weather, prices, or anything time-sensitive.
     For general knowledge questions, answer directly without searching.`,
 });
@@ -68,4 +68,47 @@ export async function generateChatTitle(message) {
         new HumanMessage(`Generate a title for the following chat message: ${message}`),
     ]);
     return response.text;
+}
+
+export async function generateResponseStream(messages, onToken) {
+    const normalizedMessages = Array.isArray(messages) ? messages : [{ role: "user", content: messages }];
+
+    const converted = normalizedMessages
+        .map((msg) => {
+            if (msg.role === "user") return new HumanMessage(msg.content);
+            if (msg.role === "assistant") return new AIMessage(msg.content);
+            return null;
+        })
+        .filter(Boolean);
+
+    let fullText = "";
+
+    // streamEvents gives you fine-grained events, including token deltas
+    // from the underlying chat model as the agent runs.
+    const eventStream = agent.streamEvents({ messages: converted }, { version: "v2" });
+
+    for await (const event of eventStream) {
+        if (event.event === "on_chat_model_stream") {
+            const chunk = event.data?.chunk;
+            let text = "";
+
+            if (chunk?.content) {
+                if (Array.isArray(chunk.content)) {
+                    text = chunk.content
+                        .filter((block) => block.type === "text")
+                        .map((block) => block.text)
+                        .join("");
+                } else if (typeof chunk.content === "string") {
+                    text = chunk.content;
+                }
+            }
+
+            if (text) {
+                fullText += text;
+                onToken(text);
+            }
+        }
+    }
+
+    return fullText;
 }

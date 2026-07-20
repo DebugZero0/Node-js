@@ -524,7 +524,18 @@ function ChatListItem({
 const PINNED_STORAGE_KEY = "perplexity_pinned_chats"
 
 const Dashboard = () => {
-  const { initializeSocketConnection, deleteChat, getChats, getMessages, sendMessage, updateChatTitle } = useChat()
+  const {
+    initializeSocketConnection,
+    sendMessageSocket,
+    onAiStart,
+    onAiChunk,
+    onAiDone,
+    onAiError,
+    deleteChat,
+    getChats,
+    getMessages,
+    updateChatTitle,
+  } = useChat()
   const { handleLogout } = useAuth()
   const { updateUserName, deleteUser } = useUser()
   const user = useSelector((state) => state.auth.user)
@@ -557,6 +568,9 @@ const Dashboard = () => {
   const [showDeleteUserConfirm, setShowDeleteUserConfirm] = useState(false)
   const [chatSearchOpen, setChatSearchOpen] = useState(false)
   const [chatSearchQuery, setChatSearchQuery] = useState("")
+  const streamingMessageIdRef = useRef(null)
+  const streamingChatIdRef = useRef(null)
+  const pendingUserMessageIdRef = useRef(null)
 
   // ── Pin state (persisted to localStorage) ──────────────────────────
   const [pinnedChatIds, setPinnedChatIds] = useState(() => {
@@ -649,7 +663,68 @@ const Dashboard = () => {
     }
   }
 
-  useEffect(() => { initializeSocketConnection() }, [initializeSocketConnection])
+    useEffect(() => {
+      initializeSocketConnection()
+
+      const offStart = onAiStart(({ chat, userMessage }) => {
+        setChats((currentChats) => {
+          const exists = currentChats.some((c) => c._id === chat._id)
+          if (exists) return currentChats.map((c) => (c._id === chat._id ? { ...c, ...chat } : c))
+          return [chat, ...currentChats]
+        })
+        setActiveChatId((prev) => prev || chat._id)
+        streamingChatIdRef.current = chat._id
+
+        // Swap the optimistic temp user message for the real saved one
+        setMessages((current) =>
+          current.map((m) => (m._id === pendingUserMessageIdRef.current ? userMessage : m))
+        )
+
+        // Placeholder assistant bubble we'll stream tokens into
+        const placeholderId = `temp-assistant-${Date.now()}`
+        streamingMessageIdRef.current = placeholderId
+        setMessages((current) => [
+          ...current,
+          { _id: placeholderId, role: "assistant", content: "", createdAt: new Date().toISOString() },
+        ])
+      })
+
+      const offChunk = onAiChunk(({ chatId, token }) => {
+        if (chatId !== streamingChatIdRef.current) return
+        const targetId = streamingMessageIdRef.current
+        setMessages((current) =>
+          current.map((m) => (m._id === targetId ? { ...m, content: m.content + token } : m))
+        )
+      })
+
+      const offDone = onAiDone(({ chat, aiMessage }) => {
+        const targetId = streamingMessageIdRef.current
+        setChats((currentChats) => {
+          const remaining = currentChats.filter((c) => c._id !== chat._id)
+          return [chat, ...remaining]
+        })
+        setMessages((current) => current.map((m) => (m._id === targetId ? aiMessage : m)))
+        streamingMessageIdRef.current = null
+        streamingChatIdRef.current = null
+        pendingUserMessageIdRef.current = null
+        setSendingMessage(false)
+      })
+
+      const offError = onAiError(({ error: errMsg }) => {
+        setError(errMsg || "Failed to generate AI response")
+        setSendingMessage(false)
+        streamingMessageIdRef.current = null
+        streamingChatIdRef.current = null
+        pendingUserMessageIdRef.current = null
+      })
+
+      return () => {
+        offStart()
+        offChunk()
+        offDone()
+        offError()
+      }
+    }, [])
 
   useEffect(() => {
     const raf = requestAnimationFrame(() => setMounted(true))
@@ -777,45 +852,35 @@ const Dashboard = () => {
     if (menuOpenChatId) { setMenuOpenChatId(null); setMenuPosition(null) }
   }
 
-  async function handleSendMessage(event) {
-    event.preventDefault()
-    const trimmedMessage = inputValue.trim()
-    if (!trimmedMessage || sendingMessage) return
+    async function handleSendMessage(event) {
+      event.preventDefault()
+      const trimmedMessage = inputValue.trim()
+      if (!trimmedMessage || sendingMessage) return
 
-    setSendingMessage(true)
-    setError("")
+      setSendingMessage(true)
+      setError("")
 
-    const tempUserMessage = {
-      _id: `temp-user-${Date.now()}`,
-      role: "user",
-      content: trimmedMessage,
-      createdAt: new Date().toISOString(),
-    }
+      const tempUserMessage = {
+        _id: `temp-user-${Date.now()}`,
+        role: "user",
+        content: trimmedMessage,
+        createdAt: new Date().toISOString(),
+      }
+      pendingUserMessageIdRef.current = tempUserMessage._id
 
-    try {
-      setMessages((currentMessages) => [...currentMessages, tempUserMessage])
+      setMessages((current) => [...current, tempUserMessage])
       setInputValue("")
       requestAnimationFrame(resizeInputHeight)
 
-      const data = await sendMessage(trimmedMessage, activeChatId)
-      const updatedChat = data.chat
-
-      setChats((currentChats) => {
-        const remainingChats = currentChats.filter((item) => item._id !== updatedChat._id)
-        return [updatedChat, ...remainingChats]
-      })
-      setActiveChatId(updatedChat._id)
-
-      const refreshedMessages = await getMessages(updatedChat._id)
-      setMessages(refreshedMessages.messages || [])
-    } catch (sendError) {
-      setError(sendError.response?.data?.error || "Failed to send message")
-      setMessages((currentMessages) => currentMessages.filter((item) => item._id !== tempUserMessage._id))
-      setInputValue(trimmedMessage)
-    } finally {
-      setSendingMessage(false)
+      try {
+        sendMessageSocket(trimmedMessage, activeChatId)
+      } catch (sendError) {
+        setError("Failed to send message")
+        setMessages((current) => current.filter((m) => m._id !== tempUserMessage._id))
+        setInputValue(trimmedMessage)
+        setSendingMessage(false)
+      }
     }
-  }
 
   function handleSelectChat(chatId) {
     setActiveChatId(chatId)
@@ -1461,7 +1526,7 @@ const Dashboard = () => {
                           </div>
                         )
                       })}
-                      {sendingMessage ? (
+                      {sendingMessage && !streamingMessageIdRef.current ? (
                         <div className="flex justify-start">
                           <div className="min-h-[44px] max-w-[92%] rounded-2xl border border-transparent px-4 py-3 text-zinc-100 sm:max-w-[85%] lg:max-w-[75%]">
                             <div className="flex min-h-6 items-center text-zinc-300">
