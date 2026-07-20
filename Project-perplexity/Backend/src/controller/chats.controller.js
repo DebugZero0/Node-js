@@ -48,7 +48,7 @@ export async function sendMessage(req, res) {
             chatId: chat._id,
             userId,
             role: "assistant",
-            content: result,
+            content: result, 
         });
 
         chat.messageIds = [...(chat.messageIds || []), userMessage._id, AImessage._id];
@@ -56,11 +56,13 @@ export async function sendMessage(req, res) {
 
         res.status(200).json({ title, chat, AImessage });
 
-        // res.status(200).json({ title, response: result });
     }
     catch (error) {
         console.error("Error generating AI response:", error);
-        res.status(500).json({ error: "Failed to generate AI response" });
+        res.status(500).json({
+            error: "Failed to generate AI response",
+            details: error.message, // remove this line before deploying to production
+        });
     }
 }
 
