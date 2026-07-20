@@ -83,15 +83,20 @@ export async function generateResponseStream(messages, onToken) {
 
     let fullText = "";
 
-    // streamEvents gives you fine-grained events, including token deltas
-    // from the underlying chat model as the agent runs.
     const eventStream = agent.streamEvents({ messages: converted }, { version: "v2" });
 
     for await (const event of eventStream) {
         if (event.event === "on_chat_model_stream") {
             const chunk = event.data?.chunk;
-            let text = "";
 
+            // Tool-call fragments are NOT displayable answer text — skip them entirely
+            const hasToolCallChunks = Array.isArray(chunk?.tool_call_chunks) && chunk.tool_call_chunks.length > 0;
+            const hasToolCalls = Array.isArray(chunk?.tool_calls) && chunk.tool_calls.length > 0;
+            if (hasToolCallChunks || hasToolCalls) {
+                continue; // don't stream, don't append to fullText
+            }
+
+            let text = "";
             if (chunk?.content) {
                 if (Array.isArray(chunk.content)) {
                     text = chunk.content

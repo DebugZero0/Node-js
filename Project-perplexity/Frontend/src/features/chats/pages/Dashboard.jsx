@@ -1490,10 +1490,14 @@ const Dashboard = () => {
                                   }`}
                               >
                                 {isUserMessage ? (
-                                  <p className="whitespace-pre-wrap text-sm leading-6 text-inherit">{message.content}</p>
-                                ) : (
-                                  <MarkdownMessage content={message.content} />
-                                )}
+                                    <p className="whitespace-pre-wrap text-sm leading-6 text-inherit">{message.content}</p>
+                                  ) : message.content ? (
+                                    <MarkdownMessage content={message.content} />
+                                  ) : (
+                                    <div className="flex min-h-6 items-center text-zinc-300">
+                                      <TypingIndicator />
+                                    </div>
+                                  )}
                               </div>
 
                               <div
