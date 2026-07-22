@@ -537,7 +537,6 @@ const Dashboard = () => {
     updateChatTitle,
   } = useChat()
   const { handleLogout } = useAuth()
-  const { updateUserName, deleteUser } = useUser()
   const user = useSelector((state) => state.auth.user)
   const [chats, setChats] = useState([])
   const [messages, setMessages] = useState([])
@@ -571,6 +570,7 @@ const Dashboard = () => {
   const streamingMessageIdRef = useRef(null)
   const streamingChatIdRef = useRef(null)
   const pendingUserMessageIdRef = useRef(null)
+  const suppressMessageLoadForChatIdRef = useRef(null)
 
   // ── Pin state (persisted to localStorage) ──────────────────────────
   const [pinnedChatIds, setPinnedChatIds] = useState(() => {
@@ -672,7 +672,12 @@ const Dashboard = () => {
           if (exists) return currentChats.map((c) => (c._id === chat._id ? { ...c, ...chat } : c))
           return [chat, ...currentChats]
         })
-        setActiveChatId((prev) => prev || chat._id)
+        setActiveChatId((prev) => {
+          if (!prev) {
+            suppressMessageLoadForChatIdRef.current = chat._id
+          }
+          return prev || chat._id
+        })
         streamingChatIdRef.current = chat._id
 
         // Swap the optimistic temp user message for the real saved one
@@ -753,6 +758,12 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!activeChatId) { setMessages([]); return }
+
+    if (suppressMessageLoadForChatIdRef.current === activeChatId) {
+      suppressMessageLoadForChatIdRef.current = null
+      return
+    }
+
     let mounted = true
     async function loadMessages() {
       setLoadingMessages(true)
@@ -830,6 +841,15 @@ const Dashboard = () => {
     return () => document.removeEventListener("keydown", handleKeyDown)
   }, [chatSearchOpen])
 
+  const { updateUserName, deleteUser, getQuota } = useUser()
+  const [quota, setQuota] = useState(null)
+
+  useEffect(() => {
+    if (!showUserInfo) return
+    let mounted = true
+    getQuota().then((data) => { if (mounted) setQuota(data) }).catch(() => {})
+    return () => { mounted = false }
+  }, [showUserInfo])
   const activeChat = useMemo(
     () => chats.find((item) => item._id === activeChatId) || null,
     [chats, activeChatId]
@@ -1660,6 +1680,19 @@ const Dashboard = () => {
             <p className="text-xs uppercase tracking-[0.22em] text-zinc-600">Email</p>
             <p className="mt-2 truncate text-base font-semibold text-white">{user?.email || "N/A"}</p>
           </div>
+            {quota?.enabled ? (
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4">
+              <p className="text-xs uppercase tracking-[0.22em] text-zinc-600 ">Credits used : </p>
+              <p className="mt-2 text-base font-semibold text-white">
+                {quota.used} / {quota.limit}
+              </p>
+              {quota.remaining === 0 && (
+                <p className="mt-1 text-xs text-rose-300">
+                  Limit reached — contact the developer to increase your limit.
+                </p>
+              )}
+            </div>
+          ) : null}
           <div className="grid grid-cols-3 gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 sm:gap-3 sm:p-4">
             <button
               type="button"

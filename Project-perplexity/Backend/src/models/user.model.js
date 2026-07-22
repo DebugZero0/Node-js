@@ -3,37 +3,26 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
 	{
-		username: {
-			type: String,
-			required: true,
-			trim: true,
+		username: { type: String, required: true, trim: true },
+		email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+		password: { type: String, required: true, minlength: 6 },
+		verified: { type: Boolean, default: false, required: true },
+		refreshToken: { type: String, default: null },
+
+		// auto-purge unverified signups after 24h; cleared once verified
+		expiresAt: {
+			type: Date,
+			default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
 		},
-		email: {
-			type: String,
-			required: true,
-			unique: true,
-			lowercase: true,
-			trim: true,
-		},
-		password: {
-			type: String,
-			required: true,
-			minlength: 6,
-		},
-		verified: {
-			type: Boolean,
-            default: false,
-            required: true,
-		},
-		refreshToken: {
-			type: String,
-			default: null,
-		},
+
+		// used by the message rate limiter below
+		messageCount: { type: Number, default: 0 },
+		messageLimit: { type: Number, default: 20 },
 	},
-	{
-		timestamps: true,
-	}
+	{ timestamps: true }
 );
+
+userSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 // Hash the password before saving the user
 userSchema.pre("save", async function () {

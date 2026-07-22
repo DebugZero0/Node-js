@@ -2,6 +2,7 @@ import userModel from "../models/user.model.js";
 import ChatModel from "../models/chat.model.js";
 import MessageModel from "../models/message.model.js";
 
+import { getDefaultMessageLimit, isRateLimitEnabled } from "../utils/rateLimiter.js";
 const isProduction = process.env.NODE_ENV === "production" || process.env.NODE_ENV === "development";
 
 function refreshCookieOptions() {
@@ -56,5 +57,35 @@ export async function deleteUser(req, res) {
     } catch (error) {
         console.error("Error deleting user:", error);
         res.status(500).json({ error: "Failed to delete user" });
+    }
+}
+
+
+export async function getQuota(req, res) {
+    const userId = req.user?.id || req.user?._id || req.userId;
+
+    try {
+        if (!userId) {
+            return res.status(401).json({ error: "Unauthorized user" });
+        }
+
+        const user = await userModel.findById(userId).select("messageCount messageLimit");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        const limit = user.messageLimit ?? getDefaultMessageLimit();
+        const used = user.messageCount ?? 0;
+
+        res.set("Cache-Control", "no-store");
+        res.status(200).json({
+            enabled: isRateLimitEnabled(),
+            used,
+            limit,
+            remaining: Math.max(limit - used, 0),
+        });
+    } catch (error) {
+        console.error("Error fetching quota:", error);
+        res.status(500).json({ error: "Failed to fetch quota" });
     }
 }

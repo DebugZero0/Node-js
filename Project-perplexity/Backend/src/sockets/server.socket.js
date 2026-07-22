@@ -4,6 +4,7 @@ import cookie from 'cookie';
 import ChatModel from '../models/chat.model.js';
 import MessageModel from '../models/message.model.js';
 import { generateResponseStream, generateChatTitle } from '../services/ai.service.js';
+import { consumeMessageQuota } from '../utils/rateLimiter.js';
 
 let io;
 
@@ -41,6 +42,12 @@ export function initsocket(httpServer) {
             try {
                 if (!message || !message.trim()) {
                     socket.emit('ai:error', { error: 'Message is required' });
+                    return;
+                }
+
+                const quota = await consumeMessageQuota(socket.userId);
+                if (!quota.allowed) {
+                    socket.emit('ai:error', { error: quota.message });
                     return;
                 }
 

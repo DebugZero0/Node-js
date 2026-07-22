@@ -9,3 +9,8 @@ export async function deleteUser() {
     const response = await api.delete(`/api/user/delete-user`)
     return response.data
 }
+
+export async function getQuota() {
+    const response = await api.get(`/api/user/quota`)
+    return response.data
+}

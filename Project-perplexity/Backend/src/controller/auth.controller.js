@@ -48,7 +48,7 @@ export const register = async (req, res) => {
         }
         // Create a new user
         const newUser = new User({ username, email, password });
-        await newUser.save();
+
         // Generate a JWT token
         const emailVerificationToken = jwt.sign({ email: newUser.email }, process.env.JWT_SECRET, { expiresIn: "1d" });
         // Send a welcome email
@@ -56,89 +56,42 @@ export const register = async (req, res) => {
             await sendEmailMailjet(
                 newUser.email,
                 "Welcome to Our App!",
-                `<div style="margin:0;padding:0;background-color:#f7f7f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f7f5;padding:40px 0;">
-                    <tr>
-                    <td align="center">
-                        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-                        <tr>
-                            <td style="padding:40px 40px 24px 40px;text-align:center;border-bottom:1px solid #eeeeee;">
-                            <div style="width:40px;height:40px;background-color:#1f1f1f;border-radius:10px;margin:0 auto 16px auto;"></div>
-                            <h1 style="margin:0;font-size:20px;font-weight:600;color:#1f1f1f;letter-spacing:-0.3px;">Welcome to Our App!</h1>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding:32px 40px;">
-                            <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#3d3d3d;">Hi ${newUser.username},</p>
-                            <p style="margin:0 0 28px 0;font-size:15px;line-height:1.6;color:#3d3d3d;">Welcome to our app! Please verify your email by clicking the link below:</p>
-                            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
-                                <tr>
-                                <td style="border-radius:8px;background-color:#1f1f1f;">
-                                    <a href="${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}" style="display:inline-block;padding:13px 32px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">Verify Email</a>
-                                </td>
-                                </tr>
-                            </table>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding:20px 40px 32px 40px;border-top:1px solid #eeeeee;">
-                            <p style="margin:0;font-size:12px;line-height:1.6;color:#a3a3a3;text-align:center;">If the button doesn't work, copy and paste this link into your browser:<br>
-                                <span style="color:#6b6b6b;word-break:break-all;">${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}</span>
-                            </p>
-                            </td>
-                        </tr>
-                        </table>
-                    </td>
-                    </tr>
-                </table>
-                </div>`,
-                `Hi ${newUser.username},\n\nWelcome to our app! Please verify your email by clicking the link below:\n${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}`
+                `<div style="margin:0;padding:48px 16px;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+                    <div style="max-width:440px;margin:0 auto;background-color:#ffffff;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,0.05);padding:48px 40px;text-align:center;">
+                        <h1 style="margin:0;font-size:22px;font-weight:600;color:#111111;letter-spacing:-0.3px;">Welcome, ${newUser.username}</h1>
+                        <p style="margin:14px 0 0 0;font-size:15px;line-height:1.65;color:#6b6b6b;">
+                        Your account has been created. Please verify your email by clicking the link below:
+                        </p>
+                        <div style="margin-top:28px;">
+                        <a href="${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}" style="display:inline-block;padding:14px 36px;font-size:14px;font-weight:600;color:#ffffff;background-color:#111111;border:1px solid #111111;text-decoration:none;border-radius:999px;">
+                            Verify Email
+                        </a>
+                        </div>
+                    </div>
+                </div>`
             );
         }
         else {
             await sendEmail(
                 newUser.email,
                 "Welcome to Our App!",
-                `<div style="margin:0;padding:0;background-color:#f7f7f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f7f5;padding:40px 0;">
-                    <tr>
-                    <td align="center">
-                        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06);">
-                        <tr>
-                            <td style="padding:40px 40px 24px 40px;text-align:center;border-bottom:1px solid #eeeeee;">
-                            <div style="width:40px;height:40px;background-color:#1f1f1f;border-radius:10px;margin:0 auto 16px auto;"></div>
-                            <h1 style="margin:0;font-size:20px;font-weight:600;color:#1f1f1f;letter-spacing:-0.3px;">Welcome to Our App!</h1>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding:32px 40px;">
-                            <p style="margin:0 0 16px 0;font-size:15px;line-height:1.6;color:#3d3d3d;">Hi ${newUser.username},</p>
-                            <p style="margin:0 0 28px 0;font-size:15px;line-height:1.6;color:#3d3d3d;">Welcome to our app! Please verify your email by clicking the link below:</p>
-                            <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
-                                <tr>
-                                <td style="border-radius:8px;background-color:#1f1f1f;">
-                                    <a href="${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}" style="display:inline-block;padding:13px 32px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:8px;">Verify Email</a>
-                                </td>
-                                </tr>
-                            </table>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding:20px 40px 32px 40px;border-top:1px solid #eeeeee;">
-                            <p style="margin:0;font-size:12px;line-height:1.6;color:#a3a3a3;text-align:center;">If the button doesn't work, copy and paste this link into your browser:<br>
-                                <span style="color:#6b6b6b;word-break:break-all;">${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}</span>
-                            </p>
-                            </td>
-                        </tr>
-                        </table>
-                    </td>
-                    </tr>
-                </table>
-                </div>`,
-                `Hi ${newUser.username},\n\nWelcome to our app! Please verify your email by clicking the link below:\n${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}`
+                `<div style="margin:0;padding:48px 16px;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+                    <div style="max-width:440px;margin:0 auto;background-color:#ffffff;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,0.05);padding:48px 40px;text-align:center;">
+                        <h1 style="margin:0;font-size:22px;font-weight:600;color:#111111;letter-spacing:-0.3px;">Welcome, ${newUser.username}</h1>
+                        <p style="margin:14px 0 0 0;font-size:15px;line-height:1.65;color:#6b6b6b;">
+                        Your account has been created. Please verify your email by clicking the link below:
+                        </p>
+                        <div style="margin-top:28px;">
+                        <a href="${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}" style="display:inline-block;padding:14px 36px;font-size:14px;font-weight:600;color:#ffffff;background-color:#111111;border:1px solid #111111;text-decoration:none;border-radius:999px;">
+                            Verify Email
+                        </a>
+                        </div>
+                    </div>
+                </div>`
             );
         }
-        // res.status(201).json({ token, user: { id: newUser._id, username: newUser.username, email: newUser.email } });
+        
+        await newUser.save();
         res.status(201).json({
             message: "User registered successfully. Please check your email for a welcome message.",
             success: true,
@@ -212,7 +165,11 @@ export const verifyEmail = async (req, res) => {
     const { token } = req.query;
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findOne({ email: decoded.email });
+        const user = await User.findOneAndUpdate(
+            { email: decoded.email },
+            { verified: true, $unset: { expiresAt: "" } },
+            { new: true }
+        );
         if (!user) {
             return res.status(400).json({ message: "Invalid token", success: false });
         }
