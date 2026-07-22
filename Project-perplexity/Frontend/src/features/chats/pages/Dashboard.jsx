@@ -6,11 +6,15 @@ import TypingIndicator from "../components/TypingIndicator"
 import { Send,Mic,MicOff } from "lucide-react"
 import { useAuth } from "../../auth/hooks/useAuth"
 import { useUser } from "../hooks/useUser"
+import ProjectModal from "../../projects/components/ProjectModel.jsx"
+
 import {
   SparklesIcon,
   MicrophoneIcon,
   ArrowUpIcon,
-} from "@heroicons/react/24/outline";
+  CodeBracketIcon,
+  CodeBracketSquareIcon,
+} from "@heroicons/react/24/outline"
 
 
 const DELAYS = ["delay-0", "delay-75", "delay-100", "delay-150", "delay-200", "delay-300", "delay-500"]
@@ -571,6 +575,8 @@ const Dashboard = () => {
   const streamingChatIdRef = useRef(null)
   const pendingUserMessageIdRef = useRef(null)
   const suppressMessageLoadForChatIdRef = useRef(null)
+  const [projectModalOpen, setProjectModalOpen] = useState(false)
+  const [selectedProject, setSelectedProject] = useState(null)
 
   // ── Pin state (persisted to localStorage) ──────────────────────────
   const [pinnedChatIds, setPinnedChatIds] = useState(() => {
@@ -893,7 +899,7 @@ const Dashboard = () => {
       requestAnimationFrame(resizeInputHeight)
 
       try {
-        sendMessageSocket(trimmedMessage, activeChatId)
+        sendMessageSocket(trimmedMessage, activeChatId, activeChatId ? undefined : selectedProject?._id)
       } catch (sendError) {
         setError("Failed to send message")
         setMessages((current) => current.filter((m) => m._id !== tempUserMessage._id))
@@ -1266,6 +1272,16 @@ const Dashboard = () => {
               <PlusIcon className="h-5 w-5 shrink-0 rounded-full bg-white/[0.1] p-0.5 transition-all duration-200 ease-out group-hover:scale-110 group-hover:rotate-5 group-active:scale-95 group-active:rotate-0" />
               <span>New chat</span>
             </button>
+            <button
+              type="button"
+              onClick={() => setProjectModalOpen(true)}
+              className="group w-full flex flex-1 items-center gap-3 rounded-xl bg-transparent px-3 py-2.5 text-sm font-medium text-zinc-400 transition-colors duration-150 hover:bg-black hover:text-zinc-100 focus:outline-none"
+          >
+              <span className="group flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
+                  <CodeBracketSquareIcon className="h-5 w-5 shrink-0 rounded-full  transition-all duration-200 ease-in-out group-hover:scale-110 group-active:scale-95" />
+              </span>
+              <span>{selectedProject ? selectedProject.name : "Project"}</span>
+          </button>
             <button
               type="button"
               onClick={toggleChatSearch}
@@ -1862,6 +1878,13 @@ const Dashboard = () => {
         }}
         pending={deletingUser}
         tone="danger"
+      />
+      {/* Project modal */}
+      <ProjectModal
+          open={projectModalOpen}
+          onClose={() => setProjectModalOpen(false)}
+          selectedProjectId={selectedProject?._id}
+          onSelectProject={setSelectedProject}
       />
     </main>
   )

@@ -48,6 +48,14 @@ export async function generateResponse(messages) {
         })
         .filter(Boolean);
 
+    if (projectContext) {
+        converted.unshift(
+            new SystemMessage(
+                `The user has attached a project's codebase for context. Use the following excerpts to answer when relevant; ignore them if they don't apply.\n\n${projectContext}`
+            )
+        );
+    }
+
     const result = await agent.invoke({ messages: converted });
     const finalMessage = result.messages[result.messages.length - 1];
 
@@ -70,7 +78,7 @@ export async function generateChatTitle(message) {
     return response.text;
 }
 
-export async function generateResponseStream(messages, onToken) {
+export async function generateResponseStream(messages, onToken, projectContext = "") {
     const normalizedMessages = Array.isArray(messages) ? messages : [{ role: "user", content: messages }];
 
     const converted = normalizedMessages
@@ -80,6 +88,14 @@ export async function generateResponseStream(messages, onToken) {
             return null;
         })
         .filter(Boolean);
+
+    if (projectContext) {
+        converted.unshift(
+            new SystemMessage(
+                `The user has attached a project's codebase for context. Use the following excerpts to answer when relevant; ignore them if they don't apply.\n\n${projectContext}`
+            )
+        );
+    }
 
     let fullText = "";
 

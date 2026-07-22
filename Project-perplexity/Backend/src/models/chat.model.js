@@ -17,6 +17,11 @@ const chatSchema = new mongoose.Schema(
 			trim: true,
 			default: "",
 		},
+		projectId: {
+			type: mongoose.Schema.Types.ObjectId,
+			ref: "Project",
+			default: null,
+		},
 		messageIds: [
 			{
 				type: mongoose.Schema.Types.ObjectId,

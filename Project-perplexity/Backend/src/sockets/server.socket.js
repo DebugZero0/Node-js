@@ -5,6 +5,7 @@ import ChatModel from '../models/chat.model.js';
 import MessageModel from '../models/message.model.js';
 import { generateResponseStream, generateChatTitle } from '../services/ai.service.js';
 import { consumeMessageQuota } from '../utils/rateLimiter.js';
+import { retrieveContext } from '../services/rag.service.js';
 
 let io;
 
@@ -38,7 +39,7 @@ export function initsocket(httpServer) {
     io.on('connection', (socket) => {
         console.log('A user connected:', socket.id, 'user:', socket.userId);
 
-        socket.on('send_message', async ({ message, chatId }) => {
+        socket.on('send_message', async ({ message, chatId , projectId }) => {
             try {
                 if (!message || !message.trim()) {
                     socket.emit('ai:error', { error: 'Message is required' });
@@ -56,13 +57,10 @@ export function initsocket(httpServer) {
 
                 if (chatId) {
                     chat = await ChatModel.findOne({ _id: chatId, userId: socket.userId });
-                    if (!chat) {
-                        socket.emit('ai:error', { error: 'Chat not found' });
-                        return;
-                    }
+                    if (!chat) { socket.emit('ai:error', { error: 'Chat not found' }); return; }
                 } else {
                     title = await generateChatTitle(message);
-                    chat = await ChatModel.create({ userId: socket.userId, title, summary: "" });
+                    chat = await ChatModel.create({ userId: socket.userId, title, summary: "", projectId: projectId || null });
                 }
 
                 const userMessage = await MessageModel.create({
@@ -75,13 +73,20 @@ export function initsocket(httpServer) {
                 // Tell the client the chat/user message right away (important for brand-new chats)
                 socket.emit('ai:start', { chat, title, userMessage });
 
-                const history = await MessageModel.find({ chatId: chat._id })
-                    .sort({ createdAt: 1 })
-                    .select('role content');
+                let contextText = "";
+                if (chat.projectId) {
+                    try {
+                        contextText = await retrieveContext(chat.projectId, message.trim());
+                    } catch (err) {
+                        console.error('RAG retrieval failed:', err.message);
+                    }
+                }
+
+                const history = await MessageModel.find({ chatId: chat._id }).sort({ createdAt: 1 }).select('role content');
 
                 const fullText = await generateResponseStream(history, (tokenText) => {
                     socket.emit('ai:chunk', { chatId: chat._id.toString(), token: tokenText });
-                });
+                }, contextText);
 
                 const aiMessage = await MessageModel.create({
                     chatId: chat._id,

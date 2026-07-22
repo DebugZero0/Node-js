@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.routes.js";
 import chatsRoutes from "./routes/chats.routes.js";
 import userRouts from "./routes/user.routes.js";
+import projectRoutes from "./routes/project.routes.js";
 import morgan from "morgan";
 import cors from "cors";
 
@@ -42,6 +43,7 @@ app.options(/.*/, cors(corsOptions));
 app.use("/api/auth", authRoutes);
 app.use("/api/chats", chatsRoutes);
 app.use("/api/user", userRouts);
+app.use("/api/projects", projectRoutes);
 
 app.get("/", (req, res) => {
     res.send("Hello World");

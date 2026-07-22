@@ -25,9 +25,9 @@ export const initializeSocketConnection = () => {
 
 export const getSocket = () => socket;
 
-export const sendMessageSocket = (message, chatId) => {
+export const sendMessageSocket = (message, chatId, projectId) => {
     if (!socket) throw new Error("Socket not initialized");
-    socket.emit("send_message", { message, chatId });
+    socket.emit("send_message", { message, chatId, projectId });
 };
 
 export const onAiStart = (callback) => {

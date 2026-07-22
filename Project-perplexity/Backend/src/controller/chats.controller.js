@@ -1,10 +1,10 @@
-
 import { generateResponse, generateChatTitle } from "../services/ai.service.js";
+import { retrieveContext } from "../services/rag.service.js";
 import ChatModel from "../models/chat.model.js";
 import MessageModel from "../models/message.model.js";
 
 export async function sendMessage(req, res) {
-    const { message, chatId } = req.body;
+    const { message, chatId, projectId } = req.body;
     const userId = req.user?.id || req.user?._id || req.userId;
 
     try {
@@ -30,6 +30,7 @@ export async function sendMessage(req, res) {
                 userId,
                 title,
                 summary: "",
+                projectId: projectId || null,
             });
         }
 
@@ -41,8 +42,21 @@ export async function sendMessage(req, res) {
             content: message.trim(),
         });
 
+        // If this chat has a project attached, pull the most relevant code/doc chunks
+        // for this specific message and feed them to the model as extra context.
+        let contextText = "";
+        if (chat.projectId) {
+            try {
+                contextText = await retrieveContext(chat.projectId, message.trim());
+            } catch (error) {
+                console.error("RAG retrieval failed:", error.message);
+                // Don't fail the whole request just because retrieval had an issue —
+                // fall back to answering without project context.
+            }
+        }
+
         const messages = await MessageModel.find({ chatId: chat._id }).sort({ createdAt: 1 }).select("role content");
-        const result = await generateResponse(messages);
+        const result = await generateResponse(messages, contextText);
 
         const AImessage = await MessageModel.create({
             chatId: chat._id,
@@ -141,4 +155,3 @@ export async function updateChatTitle(req, res) {
         res.status(500).json({ error: "Failed to update chat title" });
     }
 }
-
