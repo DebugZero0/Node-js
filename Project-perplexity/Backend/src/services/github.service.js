@@ -3,6 +3,8 @@ import axios from "axios";
 const TEXT_EXTENSIONS = new Set([
     ".js", ".jsx", ".ts", ".tsx", ".md", ".mdx", ".json", ".py", ".java",
     ".go", ".rb", ".css", ".scss", ".html", ".yml", ".yaml", ".txt", ".sql",
+    ".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hxx",
+    ".rs", ".php", ".cs", ".sh", ".makefile", ".mk",
 ]);
 
 const IGNORED_SEGMENTS = ["node_modules", "dist", "build", ".git", "package-lock.json", "yarn.lock", "coverage"];
@@ -13,9 +15,18 @@ function parseGithubUrl(url) {
     return { owner: match[1], repo: match[2].replace(/\.git$/, "") };
 }
 
+const ALLOWED_FILENAMES = new Set(["Makefile", "makefile", "CMakeLists.txt", "README"]);
+
 function isIndexable(path) {
     if (IGNORED_SEGMENTS.some((seg) => path.includes(seg))) return false;
-    const ext = path.slice(path.lastIndexOf("."));
+
+    const fileName = path.slice(path.lastIndexOf("/") + 1);
+    if (ALLOWED_FILENAMES.has(fileName)) return true;
+
+    const dotIndex = fileName.lastIndexOf(".");
+    if (dotIndex <= 0) return false; // no extension (or dotfile with nothing after the dot)
+
+    const ext = fileName.slice(dotIndex);
     return TEXT_EXTENSIONS.has(ext);
 }
 

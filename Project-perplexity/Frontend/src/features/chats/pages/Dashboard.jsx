@@ -1154,6 +1154,14 @@ const Dashboard = () => {
           </button>
           <button
             type="button"
+            onClick={() => setProjectModalOpen(true)}
+            title="Projects"
+            className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.03] text-zinc-300 transition-all duration-150 hover:border-white/20 hover:bg-[#121212] hover:text-white active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
+          >
+            <CodeBracketIcon className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
             onClick={openChatSearch}
             title="Search chats"
             className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.03] text-zinc-300 transition-all duration-150 hover:border-white/20 hover:bg-[#121212] hover:text-white active:scale-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/30"
@@ -1280,7 +1288,7 @@ const Dashboard = () => {
               <span className="group flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold">
                   <CodeBracketSquareIcon className="h-5 w-5 shrink-0 rounded-full  transition-all duration-200 ease-in-out group-hover:scale-110 group-active:scale-95" />
               </span>
-              <span>{selectedProject ? selectedProject.name : "Project"}</span>
+              <span>projects</span>
           </button>
             <button
               type="button"

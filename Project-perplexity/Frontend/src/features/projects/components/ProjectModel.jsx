@@ -69,7 +69,7 @@ export default function ProjectModal({ open, onClose, selectedProjectId, onSelec
             onClick={onClose}
         >
             <div
-                className="w-full max-w-[min(94vw,32rem)] rounded-t-3xl border border-white/10 bg-[#0d0d0f] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.6)] sm:rounded-2xl sm:p-6 max-h-[88vh] overflow-y-auto"
+                className="w-full max-w-[min(94vw,32rem)] rounded-t-3xl border border-white/10 bg-[#0d0d0f] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.6)] sm:rounded-2xl sm:p-6 max-h-[88vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between">
