@@ -8,6 +8,9 @@ const userSchema = new mongoose.Schema(
 		password: { type: String, required: true, minlength: 6 },
 		verified: { type: Boolean, default: false, required: true },
 		refreshToken: { type: String, default: null },
+		githubAccessToken: { type: String, default: null, select: false },
+		githubUsername: { type: String, default: null },
+		githubConnectedAt: { type: Date, default: null },
 
 		// auto-purge unverified signups after 24h; cleared once verified
 		expiresAt: {

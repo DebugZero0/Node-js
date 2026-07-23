@@ -1628,7 +1628,7 @@ const Dashboard = () => {
                       aria-label="Send message"
                       className="relative flex h-9 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white text-black transition-all duration-150 ease-out hover:bg-zinc-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 disabled:active:scale-100 sm:w-11"
                     >
-                      <ArrowLeftIcon className="h-4 w-4 rotate-180" />
+                      <ArrowLeftIcon className="h-4 w-4 rotate-90" />
                     </button>
                   </div>
                 </form>
@@ -1673,7 +1673,7 @@ const Dashboard = () => {
             <ul className="mt-2 space-y-1 text-zinc-400">
               <li>• Open chats from the sidebar and continue any thread.</li>
               <li>• Send messages from the composer at the bottom.</li>
-              <li>• Delete chats when you want to clear a conversation.</li>
+              <li>• Import project from github</li>
             </ul>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react"
-import { useProjects } from "../hooks/useProject"
+import { useProjects } from "../hooks/useProject.js"
+import GithubRepoPicker from "./GithubRepoPicker"
 
 const STATUS_STYLES = {
     indexing: "text-amber-300 bg-amber-400/10 border-amber-400/30",
@@ -18,11 +19,9 @@ function StatusBadge({ status }) {
 
 export default function ProjectModal({ open, onClose, selectedProjectId, onSelectProject }) {
     const { projects, loading, error, loadProjects, addProject, removeProject, reindex } = useProjects()
-    const [name, setName] = useState("")
-    const [githubUrl, setGithubUrl] = useState("")
-    const [branch, setBranch] = useState("")
-    const [submitting, setSubmitting] = useState(false)
-    const [formError, setFormError] = useState("")
+    const [pickerOpen, setPickerOpen] = useState(false)
+    const [addingRepo, setAddingRepo] = useState(null)
+    const [addError, setAddError] = useState("")
     const pollRef = useRef(null)
 
     useEffect(() => {
@@ -47,19 +46,22 @@ export default function ProjectModal({ open, onClose, selectedProjectId, onSelec
 
     if (!open) return null
 
-    async function handleSubmit(event) {
-        event.preventDefault()
-        if (!githubUrl.trim()) { setFormError("Paste a GitHub repository URL"); return }
-        setSubmitting(true)
-        setFormError("")
+    async function handleSelectRepo(repo) {
+        setAddingRepo(repo.id)
+        setAddError("")
         try {
-            const project = await addProject({ name, githubUrl, branch })
-            setName(""); setGithubUrl(""); setBranch("")
+            const project = await addProject({
+                name: repo.name,
+                owner: repo.owner,
+                repo: repo.name,
+                branch: repo.defaultBranch,
+            })
+            setPickerOpen(false)
             onSelectProject(project)
         } catch (err) {
-            setFormError(err.response?.data?.error || "Failed to add project")
+            setAddError(err.response?.data?.error || "Failed to add project")
         } finally {
-            setSubmitting(false)
+            setAddingRepo(null)
         }
     }
 
@@ -69,13 +71,15 @@ export default function ProjectModal({ open, onClose, selectedProjectId, onSelec
             onClick={onClose}
         >
             <div
-                className="w-full max-w-[min(94vw,32rem)] rounded-t-3xl border border-white/10 bg-[#0d0d0f] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.6)] sm:rounded-2xl sm:p-6 max-h-[88vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent"
+                className="w-full max-w-[min(94vw,32rem)] rounded-t-3xl border border-white/10 bg-[#0d0d0f] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.6)] sm:rounded-2xl sm:p-6 max-h-[88vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="flex items-center justify-between">
                     <div>
                         <p className="text-[11px] uppercase tracking-[0.28em] text-zinc-600">Project context</p>
-                        <h3 className="mt-1 text-lg font-semibold text-white sm:text-xl">Add a GitHub project</h3>
+                        <h3 className="mt-1 text-lg font-semibold text-white sm:text-xl">
+                            {pickerOpen ? "Choose a repository" : "Your projects"}
+                        </h3>
                     </div>
                     <button
                         type="button"
@@ -86,96 +90,88 @@ export default function ProjectModal({ open, onClose, selectedProjectId, onSelec
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="mt-5 space-y-3">
-                    <input
-                        value={githubUrl}
-                        onChange={(e) => setGithubUrl(e.target.value)}
-                        placeholder="https://github.com/owner/repo"
-                        className="w-full rounded-xl border border-white/[0.08] bg-black/30 px-4 py-2.5 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-white/25 focus:ring-2 focus:ring-white/10"
-                    />
-                    <div className="flex gap-2">
-                        <input
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            placeholder="Project name (optional)"
-                            className="w-full rounded-xl border border-white/[0.08] bg-black/30 px-4 py-2.5 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-white/25 focus:ring-2 focus:ring-white/10"
-                        />
-                        <input
-                            value={branch}
-                            onChange={(e) => setBranch(e.target.value)}
-                            placeholder="Branch (optional)"
-                            className="w-40 rounded-xl border border-white/[0.08] bg-black/30 px-4 py-2.5 text-sm text-white outline-none placeholder:text-zinc-600 focus:border-white/25 focus:ring-2 focus:ring-white/10"
-                        />
+                {pickerOpen ? (
+                    <div className="mt-5">
+                        {addError && <p className="mb-2 text-sm text-rose-300">{addError}</p>}
+                        <GithubRepoPicker onSelectRepo={handleSelectRepo} />
+                        <button
+                            type="button"
+                            onClick={() => setPickerOpen(false)}
+                            className="mt-4 text-sm text-zinc-500 hover:text-zinc-300"
+                        >
+                            ← Back to your projects
+                        </button>
                     </div>
-                    {formError && <p className="text-sm text-rose-300">{formError}</p>}
-                    <button
-                        type="submit"
-                        disabled={submitting}
-                        className="w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:opacity-50"
-                    >
-                        {submitting ? "Indexing repo..." : "Index repository"}
-                    </button>
-                </form>
+                ) : (
+                    <>
+                        <button
+                            type="button"
+                            onClick={() => setPickerOpen(true)}
+                            className="mt-5 w-full rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-zinc-200"
+                        >
+                            + Add project from GitHub
+                        </button>
 
-                <div className="mt-6">
-                    <p className="mb-2 text-[11px] uppercase tracking-[0.28em] text-zinc-600">Your projects</p>
-                    {loading && projects.length === 0 ? (
-                        <p className="text-sm text-zinc-500">Loading...</p>
-                    ) : error ? (
-                        <p className="text-sm text-rose-300">{error}</p>
-                    ) : projects.length === 0 ? (
-                        <p className="text-sm text-zinc-500">No projects yet.</p>
-                    ) : (
-                        <ul className="space-y-2">
-                            {projects.map((project) => (
-                                <li
-                                    key={project._id}
-                                    className={`flex items-center justify-between gap-3 rounded-xl border p-3 ${
-                                        selectedProjectId === project._id
-                                            ? "border-white/25 bg-white/[0.07]"
-                                            : "border-white/[0.06] bg-white/[0.02]"
-                                    }`}
-                                >
-                                    <div className="min-w-0">
-                                        <p className="truncate text-sm font-medium text-white">{project.name}</p>
-                                        <p className="truncate text-xs text-zinc-500">{project.githubUrl}</p>
-                                        {project.status === "failed" && project.error && (
-                                            <p className="mt-1 text-xs text-rose-300">{project.error}</p>
-                                        )}
-                                    </div>
-                                    <div className="flex shrink-0 items-center gap-2">
-                                        <StatusBadge status={project.status} />
-                                        {project.status === "ready" && (
-                                            <button
-                                                type="button"
-                                                onClick={() => { onSelectProject(project); onClose() }}
-                                                className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white hover:bg-white/10"
-                                            >
-                                                {selectedProjectId === project._id ? "Selected" : "Use"}
-                                            </button>
-                                        )}
-                                        {project.status === "failed" && (
-                                            <button
-                                                type="button"
-                                                onClick={() => reindex(project._id)}
-                                                className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white hover:bg-white/10"
-                                            >
-                                                Retry
-                                            </button>
-                                        )}
-                                        <button
-                                            type="button"
-                                            onClick={() => removeProject(project._id)}
-                                            className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-rose-300 hover:bg-rose-500/10"
+                        <div className="mt-6">
+                            {loading && projects.length === 0 ? (
+                                <p className="text-sm text-zinc-500">Loading...</p>
+                            ) : error ? (
+                                <p className="text-sm text-rose-300">{error}</p>
+                            ) : projects.length === 0 ? (
+                                <p className="text-sm text-zinc-500">No projects yet.</p>
+                            ) : (
+                                <ul className="space-y-2">
+                                    {projects.map((project) => (
+                                        <li
+                                            key={project._id}
+                                            className={`flex items-center justify-between gap-3 rounded-xl border p-3 ${
+                                                selectedProjectId === project._id
+                                                    ? "border-white/25 bg-white/[0.07]"
+                                                    : "border-white/[0.06] bg-white/[0.02]"
+                                            }`}
                                         >
-                                            Delete
-                                        </button>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
+                                            <div className="min-w-0">
+                                                <p className="truncate text-sm font-medium text-white">{project.name}</p>
+                                                <p className="truncate text-xs text-zinc-500">{project.githubUrl}</p>
+                                                {project.status === "failed" && project.error && (
+                                                    <p className="mt-1 text-xs text-rose-300">{project.error}</p>
+                                                )}
+                                            </div>
+                                            <div className="flex shrink-0 items-center gap-2">
+                                                <StatusBadge status={project.status} />
+                                                {project.status === "ready" && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { onSelectProject(project); onClose() }}
+                                                        className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white hover:bg-white/10"
+                                                    >
+                                                        {selectedProjectId === project._id ? "Selected" : "Use"}
+                                                    </button>
+                                                )}
+                                                {project.status === "failed" && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => reindex(project._id)}
+                                                        className="rounded-full border border-white/10 px-3 py-1 text-xs font-medium text-white hover:bg-white/10"
+                                                    >
+                                                        Retry
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeProject(project._id)}
+                                                    className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-rose-300 hover:bg-rose-500/10"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     )

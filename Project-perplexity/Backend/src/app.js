@@ -6,6 +6,7 @@ import userRouts from "./routes/user.routes.js";
 import projectRoutes from "./routes/project.routes.js";
 import morgan from "morgan";
 import cors from "cors";
+import githubRoutes from "./routes/github.routes.js";
 
 const frontendOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
 const allowedOrigins = new Set([
@@ -44,6 +45,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/chats", chatsRoutes);
 app.use("/api/user", userRouts);
 app.use("/api/projects", projectRoutes);
+app.use("/api/github", githubRoutes);
 
 app.get("/", (req, res) => {
     res.send("Hello World");

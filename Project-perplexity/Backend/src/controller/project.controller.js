@@ -1,24 +1,31 @@
+import User from "../models/user.model.js";
 import ProjectModel from "../models/project.model.js";
 import { indexProject } from "../services/rag.service.js";
 
 export async function createProject(req, res) {
     const userId = req.user?.id || req.user?._id;
-    const { name, githubUrl, branch } = req.body;
+    const { name, owner, repo, branch } = req.body;
 
-    if (!githubUrl || !githubUrl.trim()) {
-        return res.status(400).json({ error: "GitHub URL is required" });
+    if (!owner || !repo) {
+        return res.status(400).json({ error: "A repository selection is required" });
     }
 
     try {
+        const user = await User.findById(userId).select("+githubAccessToken");
+        if (!user?.githubAccessToken) {
+            return res.status(400).json({ error: "Connect GitHub before adding a project" });
+        }
+
         const project = await ProjectModel.create({
             userId,
-            name: name?.trim() || githubUrl.split("/").filter(Boolean).slice(-1)[0],
-            githubUrl: githubUrl.trim(),
+            name: name?.trim() || repo,
+            githubUrl: `https://github.com/${owner}/${repo}`,
+            owner,
+            repo,
             branch: branch?.trim() || "",
             status: "indexing",
         });
 
-        // Fire-and-forget so the request doesn't hang on a large repo
         indexProject(project._id).catch((err) => console.error("Project indexing failed:", err.message));
 
         res.status(201).json({ project });

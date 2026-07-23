@@ -151,6 +151,8 @@ export const refresh = async (req, res) => {
 
         const accessToken = buildAccessToken(user);
 
+        res.cookie("accessToken", accessToken, accessTokenOptions()); // <-- add this
+
         return res.status(200).json({
             accessToken,
             user: { id: user._id, username: user.username, email: user.email },

@@ -1,4 +1,5 @@
 import ProjectModel from "../models/project.model.js";
+import User from "../models/user.model.js";
 import { fetchRepoFiles } from "./github.service.js";
 import { embedTexts, cosineSimilarity } from "./embedding.service.js";
 
@@ -23,7 +24,13 @@ export async function indexProject(projectId) {
     if (!project) throw new Error("Project not found");
 
     try {
-        const { files } = await fetchRepoFiles(project.githubUrl, { branch: project.branch || undefined });
+        const user = await User.findById(project.userId).select("+githubAccessToken");
+        if (!user?.githubAccessToken) throw new Error("GitHub is not connected for this user");
+
+        const { files } = await fetchRepoFiles(project.owner, project.repo, {
+            accessToken: user.githubAccessToken,
+            branch: project.branch || undefined,
+        });
         if (files.length === 0) throw new Error("No indexable text files found in this repository");
 
         const rawChunks = [];

@@ -1,6 +1,7 @@
 import { api } from "../../../app/api.client.js"
 
 export async function createProject(payload) {
+    // payload: { name, owner, repo, branch }
     const response = await api.post("/api/projects", payload)
     return response.data
 }

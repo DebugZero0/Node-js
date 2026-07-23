@@ -28,6 +28,8 @@ const projectSchema = new mongoose.Schema(
         chunkCount: { type: Number, default: 0 },
         error: { type: String, default: "" },
         chunks: { type: [chunkSchema], default: [] },
+        owner: { type: String, required: true, trim: true },
+        repo: { type: String, required: true, trim: true },
     },
     { timestamps: true }
 );
