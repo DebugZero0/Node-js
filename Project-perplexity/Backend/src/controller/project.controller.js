@@ -1,6 +1,7 @@
 import User from "../models/user.model.js";
 import ProjectModel from "../models/project.model.js";
 import { indexProject } from "../services/rag.service.js";
+import { checkStorageQuota } from "../utils/storageLimiter.js";
 
 export async function createProject(req, res) {
     const userId = req.user?.id || req.user?._id;
@@ -14,6 +15,11 @@ export async function createProject(req, res) {
         const user = await User.findById(userId).select("+githubAccessToken");
         if (!user?.githubAccessToken) {
             return res.status(400).json({ error: "Connect GitHub before adding a project" });
+        }
+
+        const quota = await checkStorageQuota(userId);
+        if (!quota.allowed) {
+            return res.status(429).json({ error: "Storage limit reached. Delete a project to free up space before adding a new one." });
         }
 
         const project = await ProjectModel.create({
@@ -69,5 +75,18 @@ export async function reindexProject(req, res) {
         res.status(200).json({ message: "Reindexing started" });
     } catch {
         res.status(500).json({ error: "Failed to reindex project" });
+    }
+}
+
+export async function getStorageQuota(req, res) {
+    const userId = req.user?.id || req.user?._id;
+    try {
+        if (!userId) return res.status(401).json({ error: "Unauthorized user" });
+        const quota = await checkStorageQuota(userId);
+        res.set("Cache-Control", "no-store");
+        res.status(200).json(quota);
+    } catch (error) {
+        console.error("Error fetching storage quota:", error);
+        res.status(500).json({ error: "Failed to fetch storage quota" });
     }
 }

@@ -20,3 +20,8 @@ export async function reindexProject(projectId) {
     const response = await api.post(`/api/projects/${projectId}/reindex`)
     return response.data
 }
+
+export async function getStorageQuota() {
+    const response = await api.get("/api/projects/storage-quota")
+    return response.data
+}

@@ -21,6 +21,7 @@ const userSchema = new mongoose.Schema(
 		// used by the message rate limiter below
 		messageCount: { type: Number, default: 0 },
 		messageLimit: { type: Number, default: 20 },
+		storageLimit: { type: Number, default: 10 * 1024 * 1024 }, // 10MB default
 	},
 	{ timestamps: true }
 );
