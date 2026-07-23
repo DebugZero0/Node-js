@@ -26,8 +26,8 @@ export function useProjects() {
         }
     }, [])
 
-    async function addProject({ name, githubUrl, branch }) {
-        const data = await createProjectRequest({ name, githubUrl, branch })
+    async function addProject({ name, owner, repo, branch }) {
+        const data = await createProjectRequest({ name, owner, repo, branch })
         setProjects((current) => [data.project, ...current])
         return data.project
     }

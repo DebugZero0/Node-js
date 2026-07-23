@@ -125,7 +125,7 @@ export default function GithubRepoPicker({ onSelectRepo }) {
 
             {error && <p className="mb-2 text-sm text-rose-300">{error}</p>}
 
-            <div className="max-h-72 space-y-1.5 overflow-y-auto pr-1">
+            <div className="max-h-72 space-y-1.5 overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-white/5">
                 {repos.length === 0 && !reposLoading ? (
                     <p className="text-sm text-zinc-500">No repositories found.</p>
                 ) : (
