@@ -250,3 +250,16 @@ export function GlassAvatar({ label, size = "h-10 w-10", text = "text-sm" }) {
     </span>
   )
 }
+export function PaperclipIcon({ className }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M16.5 6.5 8.7 14.3a3 3 0 1 0 4.24 4.24l7.07-7.07a5 5 0 1 0-7.07-7.07L5.5 11.84a7 7 0 0 0 9.9 9.9"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}

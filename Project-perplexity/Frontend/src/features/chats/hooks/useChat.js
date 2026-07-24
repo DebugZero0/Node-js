@@ -6,7 +6,7 @@ import {
     onAiDone,
     onAiError,
 } from "../service/chat.socket"
-import { deleteChat, getChats, getMessages, updateChatTitle, logout } from "../service/chat.api"
+import { deleteChat, getChats, getMessages, updateChatTitle, logout, uploadAttachments } from "../service/chat.api"
 
 export const useChat = () => {
     return {
@@ -21,5 +21,6 @@ export const useChat = () => {
         getMessages,
         updateChatTitle,
         logout,
+        uploadAttachments,
     }
 }

@@ -37,7 +37,7 @@ const agent = createAgent({
     For general knowledge questions, answer directly without searching.`,
 });
 
-export async function generateResponse(messages) {
+export async function generateResponse(messages,projectContext = "") {
     const normalizedMessages = Array.isArray(messages) ? messages : [{ role: "user", content: messages }];
 
     const converted = normalizedMessages

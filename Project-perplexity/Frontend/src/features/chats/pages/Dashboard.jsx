@@ -254,7 +254,9 @@ import {
   InfoIcon,
   PinIcon,
   MenuIcon,
-  GlassAvatar} from "../components/IconFunction.jsx"
+  GlassAvatar,
+  PaperclipIcon
+} from "../components/IconFunction.jsx"
 
 function MessageSkeletonList() {
   const skeletonMessages = [
@@ -539,6 +541,7 @@ const Dashboard = () => {
     getChats,
     getMessages,
     updateChatTitle,
+    uploadAttachments
   } = useChat()
   const { handleLogout } = useAuth()
   const user = useSelector((state) => state.auth.user)
@@ -577,6 +580,9 @@ const Dashboard = () => {
   const suppressMessageLoadForChatIdRef = useRef(null)
   const [projectModalOpen, setProjectModalOpen] = useState(false)
   const [selectedProject, setSelectedProject] = useState(null)
+  const attachmentInputRef = useRef(null)
+  const [pendingAttachments, setPendingAttachments] = useState([])
+  const composerCentered = !activeChatId
 
   // ── Pin state (persisted to localStorage) ──────────────────────────
   const [pinnedChatIds, setPinnedChatIds] = useState(() => {
@@ -610,17 +616,35 @@ const Dashboard = () => {
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const dockedInputRef = useRef(null)
   const sidebarScrollRef = useRef(null)
   const chatSearchInputRef = useRef(null)
   const formRef = useRef(null)
 
+  // Docked (bottom) composer switches from a single inline row to a
+  // stacked layout (textarea on top, actions row below) once the
+  // textarea grows past a single line.
+  const [isComposerExpanded, setIsComposerExpanded] = useState(false)
+  const SINGLE_LINE_COMPOSER_HEIGHT = 56
+
   function resizeInputHeight() {
-    const inputElement = inputRef.current
-    if (!inputElement) return
     const maxHeight = 160
-    inputElement.style.height = "auto"
-    inputElement.style.height = `${Math.min(inputElement.scrollHeight, maxHeight)}px`
-    inputElement.style.overflowY = inputElement.scrollHeight > maxHeight ? "auto" : "hidden"
+
+    const centeredInputElement = inputRef.current
+    if (centeredInputElement) {
+      centeredInputElement.style.height = "auto"
+      centeredInputElement.style.height = `${Math.min(centeredInputElement.scrollHeight, maxHeight)}px`
+      centeredInputElement.style.overflowY = centeredInputElement.scrollHeight > maxHeight ? "auto" : "hidden"
+    }
+
+    const dockedInputElement = dockedInputRef.current
+    if (dockedInputElement) {
+      dockedInputElement.style.height = "auto"
+      const dockedScrollHeight = dockedInputElement.scrollHeight
+      dockedInputElement.style.height = `${Math.min(dockedScrollHeight, maxHeight)}px`
+      dockedInputElement.style.overflowY = dockedScrollHeight > maxHeight ? "auto" : "hidden"
+      setIsComposerExpanded(dockedScrollHeight > SINGLE_LINE_COMPOSER_HEIGHT)
+    }
   }
 
   function openChatSearch() {
@@ -878,19 +902,23 @@ const Dashboard = () => {
     if (menuOpenChatId) { setMenuOpenChatId(null); setMenuPosition(null) }
   }
 
-    async function handleSendMessage(event) {
+  async function handleSendMessage(event) {
       event.preventDefault()
       const trimmedMessage = inputValue.trim()
       if (!trimmedMessage || sendingMessage) return
+      if (pendingAttachments.some((a) => a.status === "uploading")) {
+          setError("Please wait for attachments to finish uploading")
+          return
+      }
 
       setSendingMessage(true)
       setError("")
 
       const tempUserMessage = {
-        _id: `temp-user-${Date.now()}`,
-        role: "user",
-        content: trimmedMessage,
-        createdAt: new Date().toISOString(),
+          _id: `temp-user-${Date.now()}`,
+          role: "user",
+          content: trimmedMessage,
+          createdAt: new Date().toISOString(),
       }
       pendingUserMessageIdRef.current = tempUserMessage._id
 
@@ -898,15 +926,25 @@ const Dashboard = () => {
       setInputValue("")
       requestAnimationFrame(resizeInputHeight)
 
+        const attachmentsPayload = pendingAttachments
+            .filter((a) => a.status === "ready")
+            .map((a) => ({
+                name: a.name,
+                kind: a.kind,
+                content: a.content,
+                truncated: a.truncated,
+                previewUrl: a.previewUrl, // ← include this so images actually reach the backend
+            }))
+
       try {
-        sendMessageSocket(trimmedMessage, activeChatId, activeChatId ? undefined : selectedProject?._id)
+          sendMessageSocket(trimmedMessage, activeChatId, activeChatId ? undefined : selectedProject?._id, attachmentsPayload)
       } catch (sendError) {
-        setError("Failed to send message")
-        setMessages((current) => current.filter((m) => m._id !== tempUserMessage._id))
-        setInputValue(trimmedMessage)
-        setSendingMessage(false)
+          setError("Failed to send message")
+          setMessages((current) => current.filter((m) => m._id !== tempUserMessage._id))
+          setInputValue(trimmedMessage)
+          setSendingMessage(false)
       }
-    }
+  }
 
   function handleSelectChat(chatId) {
     setActiveChatId(chatId)
@@ -989,6 +1027,63 @@ const Dashboard = () => {
       setPendingDeleteChatId(null)
     }
   }
+  
+  function triggerAttachmentPicker() {
+    attachmentInputRef.current?.click()
+}
+
+async function handleFilesSelected(event) {
+    const files = Array.from(event.target.files || [])
+    event.target.value = ""
+    if (files.length === 0) return
+
+    const MAX_FILES = 5
+    if (pendingAttachments.length + files.length > MAX_FILES) {
+        setError(`You can attach up to ${MAX_FILES} files at a time`)
+        return
+    }
+
+    const newEntries = files.map((file) => ({
+        id: `attachment-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file,
+        name: file.name,
+        size: file.size,
+        status: "uploading",
+    }))
+
+    setPendingAttachments((current) => [...current, ...newEntries])
+
+    try {
+        const data = await uploadAttachments(newEntries.map((entry) => entry.file))
+        setPendingAttachments((current) =>
+            current.map((entry) => {
+                const index = newEntries.findIndex((e) => e.id === entry.id)
+                if (index === -1) return entry
+                const parsed = data.attachments[index]
+                if (!parsed) return { ...entry, status: "error" }
+                return {
+                    ...entry,
+                    status: parsed.kind === "unsupported" ? "unsupported" : "ready",
+                    kind: parsed.kind,
+                    content: parsed.content,
+                    truncated: parsed.truncated,
+                    previewUrl: parsed.previewUrl,
+                }
+            })
+        )
+    } catch {
+        setPendingAttachments((current) =>
+            current.map((entry) =>
+                newEntries.some((e) => e.id === entry.id) ? { ...entry, status: "error" } : entry
+            )
+        )
+        setError("Failed to upload one or more attachments")
+    }
+}
+
+function removeAttachment(id) {
+    setPendingAttachments((current) => current.filter((entry) => entry.id !== id))
+}
 
   function cancelDeleteChat() {
     if (deletingChatId) return
@@ -1482,142 +1577,325 @@ const Dashboard = () => {
             </div>
           </header>
 
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex min-h-0 flex-1 flex-col">
-              <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 pt-1 pb-26">
-                <div className="mx-auto w-full max-w-3xl">
-                  {error ? (
-                    <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/[0.06] px-4 py-3 text-sm text-rose-300">
-                      {error}
-                    </div>
-                  ) : null}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          {/* ============================================================ */}
+          {/* Centered composer — shown for a brand-new, not-yet-started conversation */}
+          {/* ============================================================ */}
+          <div
+            className={`absolute inset-0 z-10 flex flex-col items-center justify-center px-4 transition-all duration-500 ease-out${
+              composerCentered
+                ? "translate-y-0 opacity-100"
+                : "pointer-events-none -translate-y-4 opacity-0"
+            }`}
+            aria-hidden={!composerCentered}
+          >
+            <div className="mb-6 max-w-md text-center">
+              <h3 className="text-xl font-semibold text-white sm:text-2xl lg:text-5xl">Ask anything</h3>
+              <p className="mt-2 text-sm leading-6 text-zinc-500">
+                Start a new conversation, or pick one from the sidebar.
+              </p>
+            </div>
 
-                  {loadingMessages ? (
-                    <MessageSkeletonList />
-                  ) : messages.length === 0 ? (
-                    <div className="flex min-h-[50vh] items-center justify-center sm:min-h-[55vh]">
-                      <div className="max-w-md text-center">
-                        <h3 className="text-xl font-semibold text-white sm:text-2xl lg:text-3xl">Ask anything</h3>
-                        <p className="mt-2 text-sm leading-6 text-zinc-500">
-                          Pick a chat from the sidebar or start a new one.
-                        </p>
-                        <div className="mt-6 flex flex-wrap justify-center gap-2 sm:gap-3">
-                          {["MERN Stack", "LangChain", "WebRTC", "AI Integration"].map((item) => (
-                            <button
-                              key={item}
-                              className="rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-300 transition hover:bg-white/10 sm:px-4 sm:text-sm"
-                            >
-                              {item}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+            <form onSubmit={handleSendMessage} className="w-full max-w-2xl p-0 sm:p-1 lg:max-w-lg">
+              {pendingAttachments.length > 0 && (
+                <div className="mb-2 flex flex-wrap gap-2 px-1">
+                  {pendingAttachments.map((attachment) => (
+                    <div
+                      key={attachment.id}
+                      className={`flex items-center gap-2 rounded-xl border px-2.5 py-1.5 text-xs ${
+                        attachment.status === "error"
+                          ? "border-rose-500/30 bg-rose-500/10 text-rose-200"
+                          : attachment.status === "unsupported"
+                          ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+                          : "border-white/10 bg-white/[0.05] text-zinc-200"
+                      }`}
+                    >
+                      {attachment.kind === "image" && attachment.previewUrl ? (
+                        <img src={attachment.previewUrl} alt={attachment.name} className="h-5 w-5 rounded object-cover" />
+                      ) : (
+                        <PaperclipIcon className="h-3.5 w-3.5 shrink-0" />
+                      )}
+                      <span className="max-w-[9rem] truncate">{attachment.name}</span>
+                      {attachment.status === "uploading" && (
+                        <span className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-zinc-500/40 border-t-zinc-200" />
+                      )}
+                      {attachment.status === "unsupported" && <span className="shrink-0">unsupported</span>}
+                      {attachment.status === "error" && <span className="shrink-0">failed</span>}
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(attachment.id)}
+                        aria-label={`Remove ${attachment.name}`}
+                        className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:text-white"
+                      >
+                        <CloseIcon className="h-3 w-3" />
+                      </button>
                     </div>
-                  ) : (
-                    <div className="flex flex-col gap-4">
-                      {messages.map((message) => {
-                        const isUserMessage = message.role === "user"
-                        const actionTime = formatMessageActionTime(message.createdAt)
+                  ))}
+                </div>
+              )}
 
-                        return (
+              <div className="flex-row items-center gap-2 rounded-2xl bg-[#131316] px-2 py-1.5 sm:px-3 border border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),inset_0_0_0_1px_rgba(255,255,255,0.02),0_1px_2px_rgba(0,0,0,0.4),0_8px_24px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md ring-1 ring-black/40 transition-shadow duration-200">
+                <div className="flex flex-1 items-center gap-2 w-full"> 
+                <textarea
+                  value={inputValue}
+                  ref={inputRef}
+                  onChange={(event) => {
+                    setInputValue(event.target.value)
+                    resizeInputHeight()
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey && !sendingMessage && inputValue.trim()) {
+                      event.preventDefault()
+                      handleSendMessage(event)
+                    }
+                  }}
+                  rows={1}
+                  placeholder="Ask something or start a new chat..."
+                  disabled={!composerCentered} 
+                  tabIndex={composerCentered ? 0 : -1}
+                  className="min-h-11 flex-1 resize-none overflow-hidden rounded-xl bg-[#131316] px-3 py-2.5 text-sm leading-6 text-white outline-none placeholder:text-zinc-600 transition-colors duration-150 sm:min-h-12 sm:px-4 sm:py-3 scrollbar-thin scrollbar-auto scrollbar-thumb-zinc-600/20 scrollbar-track-transparent"
+                />
+                </div> 
+                {/* lower div for buttons */}
+                <div className="flex flex-shrink-0 items-center justify-around gap-1"> 
+                  {/* Attach button */}
+                    <div className="flex items-center justify-start gap-1 w-full">
+                    <input
+                      type="file"
+                      multiple
+                      hidden
+                      accept="image/*,.txt,.md,.js,.jsx,.ts,.tsx,.json,.py,.css,.html,.csv,.pdf,.log,.yml,.yaml"
+                      onChange={handleFilesSelected}
+                      id="centered-attachment-input"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById("centered-attachment-input")?.click()}
+                      aria-label="Attach files"
+                      title="Attach files"
+                      className="relative flex h-9 w-10 flex-shrink-0 items-center justify-center rounded-full text-zinc-400 transition-all duration-150 ease-out hover:text-zinc-100 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:w-11"
+                    >
+                      <PaperclipIcon className="h-4 w-4" />
+                    </button>
+                    </div>
+                    {/* Reset button */}
+                    <div className="flex items-center justify-end gap-1 w-full">
+                      <button
+                        type="button"
+                        onClick={toggleListening}
+                        aria-label={isListening ? "Stop recording" : "Start voice input"}
+                        className={`relative flex h-9 w-10 flex-shrink-0 items-center justify-center rounded-full transition-all duration-150 ease-out active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:w-11 ${
+                          isListening ? "bg-red-500 text-white animate-pulse" : "bg-transparent text-zinc-200 hover:text-zinc-100"
+                        }`}
+                      >
+                        {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={sendingMessage || !inputValue.trim()}
+                        aria-label="Send message"
+                        className="relative flex h-9 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white text-black transition-all duration-150 ease-out hover:bg-zinc-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 disabled:active:scale-100"
+                      >
+                        <ArrowLeftIcon className="h-4 w-4 rotate-90" />
+                      </button>
+                    </div>
+
+                  
+                </div>
+              </div>  
+            </form>
+          </div>
+
+          {/* ============================================================ */}
+          {/* Bottom-docked layout — active/ongoing conversation             */}
+          {/* ============================================================ */}
+          <div
+            className={`flex min-h-0 flex-1 flex-col transition-opacity duration-500 ease-out ${
+              composerCentered ? "pointer-events-none opacity-0" : "opacity-100"
+            }`}
+            aria-hidden={composerCentered}
+          >
+            <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 pt-1 pb-26">
+              <div className="mx-auto w-full max-w-3xl">
+                {error ? (
+                  <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/[0.06] px-4 py-3 text-sm text-rose-300">
+                    {error}
+                  </div>
+                ) : null}
+
+                {loadingMessages ? (
+                  <MessageSkeletonList />
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {messages.map((message) => {
+                      const isUserMessage = message.role === "user"
+                      const actionTime = formatMessageActionTime(message.createdAt)
+
+                      return (
+                        <div
+                          key={message._id}
+                          className={`group/message flex ${isUserMessage ? "justify-end" : "justify-start"}`}
+                        >
                           <div
-                            key={message._id}
-                            className={`group/message flex ${isUserMessage ? "justify-end" : "justify-start"}`}
+                            className={`flex max-w-[92%] flex-col sm:max-w-[85%] lg:max-w-[75%] ${isUserMessage ? "items-end" : "items-start"}`}
                           >
                             <div
-                              className={`flex max-w-[92%] flex-col sm:max-w-[85%] lg:max-w-[75%] ${isUserMessage ? "items-end" : "items-start"}`}
+                              className={`max-w-full rounded-2xl border px-4 py-3 ${isUserMessage
+                                ? "border-transparent bg-white/[0.06] text-zinc-100"
+                                : "border-transparent bg-black/5 text-zinc-100"
+                                }`}
                             >
-                              <div
-                                className={`max-w-full rounded-2xl border px-4 py-3 ${isUserMessage
-                                  ? "border-transparent bg-white/[0.06] text-zinc-100"
-                                  : "border-transparent bg-black/5 text-zinc-100"
-                                  }`}
-                              >
-                                {isUserMessage ? (
-                                    <p className="whitespace-pre-wrap text-sm leading-6 text-inherit">{message.content}</p>
-                                  ) : message.content ? (
-                                    <MarkdownMessage content={message.content} />
-                                  ) : (
-                                    <div className="flex min-h-6 items-center text-zinc-300">
-                                      <TypingIndicator />
-                                    </div>
-                                  )}
-                              </div>
-
-                              <div
-                                className={`mt-1 flex min-h-8 flex-wrap items-center gap-1 text-[11px] text-zinc-500 opacity-100 transition-all duration-150 ease-in-out sm:opacity-0 sm:group-hover/message:opacity-100 sm:group-focus-within/message:opacity-100 ${isUserMessage ? "justify-end" : "justify-start"}`}
-                              >
-                                <span className="mr-1 whitespace-nowrap">{actionTime}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleEditMessageDraft(message)}
-                                  aria-label="Edit message"
-                                  title="Edit message"
-                                  className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] text-zinc-500 transition-colors duration-150 hover:border-white/15 hover:bg-white/[0.07] hover:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
-                                >
-                                  <EditIcon className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopyMessage(message)}
-                                  aria-label="Copy message"
-                                  title="Copy message"
-                                  className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] text-zinc-500 transition-colors duration-150 hover:border-white/15 hover:bg-white/[0.07] hover:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
-                                >
-                                  <CopyIcon className="h-3.5 w-3.5" />
-                                </button>
-                                {copiedMessageId === message._id ? (
-                                  <span className="whitespace-nowrap px-1 text-zinc-300">Copied</span>
-                                ) : null}
-                              </div>
+                              {isUserMessage ? (
+                                <p className="whitespace-pre-wrap text-sm leading-6 text-inherit">{message.content}</p>
+                              ) : message.content ? (
+                                <MarkdownMessage content={message.content} />
+                              ) : (
+                                <div className="flex min-h-6 items-center text-zinc-300">
+                                  <TypingIndicator />
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        )
-                      })}
-                      {sendingMessage && !streamingMessageIdRef.current ? (
-                        <div className="flex justify-start">
-                          <div className="min-h-[44px] max-w-[92%] rounded-2xl border border-transparent px-4 py-3 text-zinc-100 sm:max-w-[85%] lg:max-w-[75%]">
-                            <div className="flex min-h-6 items-center text-zinc-300">
-                              <TypingIndicator />
+
+                            <div
+                              className={`mt-1 flex min-h-8 flex-wrap items-center gap-1 text-[11px] text-zinc-500 opacity-100 transition-all duration-150 ease-in-out sm:opacity-0 sm:group-hover/message:opacity-100 sm:group-focus-within/message:opacity-100 ${isUserMessage ? "justify-end" : "justify-start"}`}
+                            >
+                              <span className="mr-1 whitespace-nowrap">{actionTime}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleEditMessageDraft(message)}
+                                aria-label="Edit message"
+                                title="Edit message"
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] text-zinc-500 transition-colors duration-150 hover:border-white/15 hover:bg-white/[0.07] hover:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+                              >
+                                <EditIcon className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyMessage(message)}
+                                aria-label="Copy message"
+                                title="Copy message"
+                                className="flex h-7 w-7 items-center justify-center rounded-full border border-white/[0.06] bg-white/[0.03] text-zinc-500 transition-colors duration-150 hover:border-white/15 hover:bg-white/[0.07] hover:text-zinc-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/25"
+                              >
+                                <CopyIcon className="h-3.5 w-3.5" />
+                              </button>
+                              {copiedMessageId === message._id ? (
+                                <span className="whitespace-nowrap px-1 text-zinc-300">Copied</span>
+                              ) : null}
                             </div>
                           </div>
                         </div>
-                      ) : null}
-                      <div ref={messagesEndRef} />
-                    </div>
-                  )}
-                </div>
+                      )
+                    })}
+                    {sendingMessage && !streamingMessageIdRef.current ? (
+                      <div className="flex justify-start">
+                        <div className="min-h-[44px] max-w-[92%] rounded-2xl border border-transparent px-4 py-3 text-zinc-100 sm:max-w-[85%] lg:max-w-[75%]">
+                          <div className="flex min-h-6 items-center text-zinc-300">
+                            <TypingIndicator />
+                          </div>
+                        </div>
+                      </div>
+                    ) : null}
+                    <div ref={messagesEndRef} />
+                  </div>
+                )}
               </div>
+            </div>
 
-              {/* Composer */}
-              <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-shrink-0 justify-center border-t border-white/[0.04] px-3 py-3 backdrop-blur-xl sm:px-6 sm:py-4 lg:px-8">
-                <form onSubmit={handleSendMessage} ref={formRef} className="w-xl max-w-xl p-0 sm:max-w-2xl sm:p-1 lg:max-w-3xl">
-                  <div className="flex items-center gap-2 rounded-2xl bg-[#131316] px-2 py-1.5 sm:px-3">
-                    <textarea
-                      ref={inputRef}
-                      value={inputValue}
-                      onChange={(event) => {
-                        setInputValue(event.target.value)
-                        resizeInputHeight()
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" && !event.shiftKey && !sendingMessage && inputValue.trim()) {
-                          event.preventDefault()
-                          formRef.current?.requestSubmit()
-                        }
-                      }}
-                      rows={1}
-                      placeholder="Ask something or start a new chat..."
-                      className="min-h-11 flex-1 resize-none overflow-hidden rounded-xl bg-[#131316] px-3 py-2.5 text-sm leading-6 text-white outline-none placeholder:text-zinc-600 transition-colors duration-150 scrollbar-thumb-zinc-700 scrollbar-track-transparent scrollbar-thin sm:min-h-12 sm:px-4 sm:py-3"
-                    />
+            {/* Composer */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-shrink-0 justify-center border-t border-white/[0.04] px-3 py-3 backdrop-blur-xl sm:px-6 sm:py-4 lg:px-8">
+              <form onSubmit={handleSendMessage} ref={formRef} className="w-xl max-w-xl p-0 sm:max-w-2xl sm:p-1 lg:max-w-3xl">
+                {pendingAttachments.length > 0 && (
+                  <div className="mb-2 flex flex-wrap gap-2 px-1">
+                    {pendingAttachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className={`flex items-center gap-2 rounded-xl border px-2.5 py-1.5 text-xs ${
+                          attachment.status === "error"
+                            ? "border-rose-500/30 bg-rose-500/10 text-rose-200"
+                            : attachment.status === "unsupported"
+                            ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+                            : "border-white/10 bg-white/[0.05] text-zinc-200"
+                        }`}
+                      >
+                        {attachment.kind === "image" && attachment.previewUrl ? (
+                          <img src={attachment.previewUrl} alt={attachment.name} className="h-5 w-5 rounded object-cover" />
+                        ) : (
+                          <PaperclipIcon className="h-3.5 w-3.5 shrink-0" />
+                        )}
+                        <span className="max-w-[9rem] truncate">{attachment.name}</span>
+                        {attachment.status === "uploading" && (
+                          <span className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-zinc-500/40 border-t-zinc-200" />
+                        )}
+                        {attachment.status === "unsupported" && <span className="shrink-0">unsupported</span>}
+                        {attachment.status === "error" && <span className="shrink-0">failed</span>}
+                        <button
+                          type="button"
+                          onClick={() => removeAttachment(attachment.id)}
+                          aria-label={`Remove ${attachment.name}`}
+                          className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-zinc-500 hover:text-white"
+                        >
+                          <CloseIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-[#131316] px-2 py-1.5 sm:px-3">
+                  <input
+                    ref={attachmentInputRef}
+                    type="file"
+                    multiple
+                    hidden
+                    accept="image/*,.txt,.md,.js,.jsx,.ts,.tsx,.json,.py,.css,.html,.csv,.pdf,.log,.yml,.yaml"
+                    onChange={handleFilesSelected}
+                  />
+
+                  {/* Attach button — sits left of the textarea when compact, left of the actions row once expanded */}
+                  <button
+                    type="button"
+                    onClick={triggerAttachmentPicker}
+                    aria-label="Attach files"
+                    title="Attach files"
+                    className={`relative flex h-9 w-10 flex-shrink-0 items-center justify-center rounded-full text-zinc-400 transition-all duration-150 ease-out hover:text-zinc-100 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:w-11 ${
+                      isComposerExpanded ? "order-2 mt-0.5" : "order-0"
+                    }`}
+                  >
+                    <PaperclipIcon className="h-4 w-4" />
+                  </button>
+
+                  <textarea
+                    ref={dockedInputRef}
+                    value={inputValue}
+                    onChange={(event) => {
+                      setInputValue(event.target.value)
+                      resizeInputHeight()
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !event.shiftKey && !sendingMessage && inputValue.trim()) {
+                        event.preventDefault()
+                        formRef.current?.requestSubmit()
+                      }
+                    }}
+                    rows={1}
+                    placeholder="Ask something...."
+                    className={`min-h-11 resize-none overflow-hidden rounded-xl bg-[#131316] px-3 py-2.5 text-sm leading-6 text-white outline-none placeholder:text-zinc-600 transition-colors duration-150 scrollbar-thumb-zinc-700 scrollbar-track-transparent scrollbar-thin sm:min-h-12 sm:px-4 sm:py-3 ${
+                      isComposerExpanded ? "order-1 w-full" : "order-1 min-w-0 flex-1"
+                    }`}
+                  />
+
+                  {/* Mic + Send — always the right-most group, pushed to the far right via ml-auto */}
+                  <div
+                    className={`flex flex-shrink-0 items-center gap-1 order-3 ml-auto ${
+                      isComposerExpanded ? "mt-0.5" : ""
+                    }`}
+                  >
                     <button
                       type="button"
                       onClick={toggleListening}
                       aria-label={isListening ? "Stop recording" : "Start voice input"}
                       className={`relative flex h-9 w-10 flex-shrink-0 items-center justify-center rounded-full transition-all duration-150 ease-out active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:w-11 ${
-                        isListening
-                          ? "bg-red-500 text-white animate-pulse"
-                          : "bg-transparent text-zinc-200 hover:text-zinc-100"
+                        isListening ? "bg-red-500 text-white animate-pulse" : "bg-transparent text-zinc-200 hover:text-zinc-100"
                       }`}
                     >
                       {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
@@ -1626,15 +1904,16 @@ const Dashboard = () => {
                       type="submit"
                       disabled={sendingMessage || !inputValue.trim()}
                       aria-label="Send message"
-                      className="relative flex h-9 w-10 flex-shrink-0 items-center justify-center rounded-full bg-white text-black transition-all duration-150 ease-out hover:bg-zinc-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 disabled:active:scale-100 sm:w-11"
+                      className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white text-black transition-all duration-150 ease-out hover:bg-zinc-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 disabled:active:scale-100"
                     >
                       <ArrowLeftIcon className="h-4 w-4 rotate-90" />
                     </button>
                   </div>
-                </form>
-              </div>
+                </div>
+              </form>
             </div>
           </div>
+        </div>
         </section>
       </div>
 

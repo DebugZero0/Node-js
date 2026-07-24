@@ -4,6 +4,7 @@ import cookie from 'cookie';
 import ChatModel from '../models/chat.model.js';
 import MessageModel from '../models/message.model.js';
 import { generateResponseStream, generateChatTitle } from '../services/ai.service.js';
+import { generateVisionResponseStream } from '../services/ai-vision.service.js';
 import { consumeMessageQuota } from '../utils/rateLimiter.js';
 import { retrieveContext } from '../services/rag.service.js';
 
@@ -39,7 +40,7 @@ export function initsocket(httpServer) {
     io.on('connection', (socket) => {
         console.log('A user connected:', socket.id, 'user:', socket.userId);
 
-        socket.on('send_message', async ({ message, chatId , projectId }) => {
+        socket.on('send_message', async ({ message, chatId, projectId, attachments }) => {
             try {
                 if (!message || !message.trim()) {
                     socket.emit('ai:error', { error: 'Message is required' });
@@ -70,7 +71,6 @@ export function initsocket(httpServer) {
                     content: message.trim(),
                 });
 
-                // Tell the client the chat/user message right away (important for brand-new chats)
                 socket.emit('ai:start', { chat, title, userMessage });
 
                 let contextText = "";
@@ -82,11 +82,33 @@ export function initsocket(httpServer) {
                     }
                 }
 
+                const imageAttachments = Array.isArray(attachments)
+                    ? attachments.filter((a) => a.kind === "image" && a.previewUrl)
+                    : [];
+
+                // Fold text-file attachment content into the context blob either way
+                if (Array.isArray(attachments) && attachments.length > 0) {
+                    const attachmentContext = attachments
+                        .filter((a) => a.kind === "text" && a.content)
+                        .map((a) => `File: ${a.name}${a.truncated ? " (truncated)" : ""}\n${a.content}`)
+                        .join("\n\n---\n\n");
+
+                    if (attachmentContext) {
+                        contextText = contextText ? `${contextText}\n\n---\n\n${attachmentContext}` : attachmentContext;
+                    }
+                }
+
                 const history = await MessageModel.find({ chatId: chat._id }).sort({ createdAt: 1 }).select('role content');
 
-                const fullText = await generateResponseStream(history, (tokenText) => {
+                const onToken = (tokenText) => {
                     socket.emit('ai:chunk', { chatId: chat._id.toString(), token: tokenText });
-                }, contextText);
+                };
+
+                // Images present → route through the vision-capable model.
+                // No images → keep the existing web-search agent for text-only turns.
+                const fullText = imageAttachments.length > 0
+                    ? await generateVisionResponseStream(history, imageAttachments, onToken, contextText)
+                    : await generateResponseStream(history, onToken, contextText);
 
                 const aiMessage = await MessageModel.create({
                     chatId: chat._id,
