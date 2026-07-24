@@ -1691,7 +1691,7 @@ function removeAttachment(id) {
               </div>
 
               {/* Composer */}
-              <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-shrink-0 justify-center border-t border-white/[0.04] px-3 py-3 backdrop-blur-xl sm:px-6 sm:py-4 lg:px-8">
+              <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-shrink-0 justify-center px-3 py-3 backdrop-blur-xl sm:px-6 sm:pt-2 sm:pb-4 lg:px-8">
                             <form onSubmit={handleSendMessage} ref={formRef} className="w-xl max-w-xl p-0 sm:max-w-2xl sm:p-1 lg:max-w-3xl">
                               {pendingAttachments.length > 0 && (
                                 <div className="mb-2 flex flex-wrap gap-2 px-1">
@@ -1783,7 +1783,7 @@ function removeAttachment(id) {
                                         type="button"
                                         onClick={toggleListening}
                                         aria-label={isListening ? "Stop recording" : "Start voice input"}
-                                        className={`relative flex h-9 w-10 flex-shrink-0 items-center justify-center rounded-full transition-all duration-150 ease-out active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:w-11 ${
+                                        className={`relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl transition-all duration-150 ease-out active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 sm:w-8 ${
                                           isListening ? "bg-red-500 text-white animate-pulse" : "bg-transparent text-zinc-200 hover:text-zinc-100"
                                         }`}
                                       >
@@ -1793,7 +1793,7 @@ function removeAttachment(id) {
                                         type="submit"
                                         disabled={sendingMessage || !inputValue.trim()}
                                         aria-label="Send message"
-                                        className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white text-black transition-all duration-150 ease-out hover:bg-zinc-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 disabled:active:scale-100"
+                                        className="relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-white text-black transition-all duration-150 ease-out hover:bg-zinc-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 disabled:cursor-not-allowed disabled:bg-zinc-700 disabled:text-zinc-400 disabled:active:scale-100"
                                       >
                                         <ArrowLeftIcon className="h-4 w-4 rotate-90" />
                                       </button>
