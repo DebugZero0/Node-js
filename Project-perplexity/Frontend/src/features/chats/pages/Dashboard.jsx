@@ -624,17 +624,16 @@ function resizeInputHeight() {
   const inputElement = dockedInputRef.current
   if (!inputElement) return
 
-  const minHeight = 30
+  const minHeight = 32
   const maxHeight = 160
 
-  // Always reset to the initial one-line height first.
-  // This allows the textarea to both grow and shrink correctly.
+  // Reset height before measuring
   inputElement.style.height = `${minHeight}px`
 
-  // Measure the content after resetting
+  // Measure content
   const scrollHeight = inputElement.scrollHeight
 
-  // Grow only when content needs more space
+  // Calculate new height
   const newHeight = Math.min(
     Math.max(scrollHeight, minHeight),
     maxHeight
@@ -642,7 +641,7 @@ function resizeInputHeight() {
 
   inputElement.style.height = `${newHeight}px`
 
-  // Scroll only after reaching the maximum height
+  // Enable scrolling only after max height
   inputElement.style.overflowY =
     scrollHeight > maxHeight ? "auto" : "hidden"
 }
@@ -650,7 +649,7 @@ useEffect(() => {
   const inputElement = dockedInputRef.current
   if (!inputElement) return
 
-  inputElement.style.height = "30px"
+  inputElement.style.height = "32px"
   inputElement.style.overflowY = "hidden"
 }, [])
 
@@ -1731,7 +1730,7 @@ function removeAttachment(id) {
                                 </div>
                               )}
                             {/* whole div  */}
-                              <div className="flex flex-col items-center gap-2 rounded-2xl px-2 py-1.5 sm:px-3 bg-[#131316] px-2 py-1.5 sm:px-3 border border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),inset_0_0_0_1px_rgba(255,255,255,0.02),0_1px_2px_rgba(0,0,0,0.4),0_8px_24px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md ring-1 ring-black/40 transition-shadow duration-200">
+                              <div className="flex flex-col items-center gap-2 rounded-2xl  bg-[#131316] px-1 py-1 sm:px-3 border border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06),inset_0_0_0_1px_rgba(255,255,255,0.02),0_1px_2px_rgba(0,0,0,0.4),0_8px_24px_-8px_rgba(0,0,0,0.6)] backdrop-blur-md ring-1 ring-black/40 transition-shadow duration-200">
                                   {/* Textarea */}
                                   <div className=" w-full">
                                       <textarea
@@ -1752,8 +1751,8 @@ function removeAttachment(id) {
                                             formRef.current?.requestSubmit()
                                           }
                                         }}
-                                        placeholder="Ask something ..."
-                                        className="h-10 min-h-10 max-h-[160px] w-full resize-none rounded-xl bg-transparent px-3 py-2 text-sm leading-6 text-zinc-100 placeholder:text-zinc-500 focus:outline-none sm:text-base scrollbar-thin scrollbar-thumb-zinc-500/30 scrollbar-track-transparent"
+                                        placeholder="Write a message..."
+                                        className="box-border h-8 min-h-8 max-h-[160px] w-full resize-none rounded-xl bg-transparent px-3 pt-3 pb-0 text-sm leading-5 text-zinc-100 placeholder:text-zinc-500 focus:outline-none sm:text-base scrollbar-thin scrollbar-thumb-zinc-500/30 scrollbar-track-transparent"
                                       />
                                   </div>
                                 {/* icons and buttons */}

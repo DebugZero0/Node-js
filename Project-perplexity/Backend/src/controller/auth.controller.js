@@ -175,8 +175,6 @@ export const verifyEmail = async (req, res) => {
         if (!user) {
             return res.status(400).json({ message: "Invalid token", success: false });
         }
-        user.verified = true;
-        await user.save();
 
         const html = `<html style="margin:0;padding:0;height:100%;width:100%;background:#09090b;font-family:Arial,Helvetica,sans-serif;color:#fafafa;">
         <div style="margin:0;padding:0;height:100%;width:100%;background:#09090b;font-family:Arial,Helvetica,sans-serif;color:#fafafa;">

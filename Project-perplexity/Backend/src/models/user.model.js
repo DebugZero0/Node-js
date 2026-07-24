@@ -41,6 +41,12 @@ userSchema.pre("save", async function () {
 		next(error);
 	}
 });
+userSchema.pre("save", function (next) {
+    if (this.verified) {
+        this.expiresAt = undefined;
+    }
+    next();
+});
 // Method to compare candidate password with the stored hashed password
 userSchema.methods.comparePassword = function (candidatePassword) {
 	return bcrypt.compare(candidatePassword, this.password);
