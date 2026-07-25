@@ -1,7 +1,8 @@
 import { api } from "../../../app/api.client.js"
 
 export function getGithubOAuthUrl() {
-    return `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/api/github/oauth/start`
+    const base = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? "" : "http://localhost:3000")
+    return `${base}/api/github/oauth/start`
 }
 
 export async function getGithubStatus() {

@@ -6,11 +6,13 @@ let socket = null;
 export const initializeSocketConnection = () => {
     if (socket) return socket;
 
-    socket = io(import.meta.env.VITE_API_URL || "http://localhost:3000", {
-        withCredentials: true,
-        // function form re-reads the token on every (re)connect attempt
-        auth: (cb) => cb({ token: store.getState().auth.accessToken }),
-    });
+    socket = io(
+        import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? undefined : "http://localhost:3000"),
+        {
+            withCredentials: true,
+            auth: (cb) => cb({ token: store.getState().auth.accessToken }),
+        }
+        )
 
     socket.on("connect", () => {
         console.log("Connected to Socket.IO server with ID:", socket.id);

@@ -8,6 +8,12 @@ import morgan from "morgan";
 import cors from "cors";
 import githubRoutes from "./routes/github.routes.js";
 
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const frontendOrigin = process.env.FRONTEND_URL || "http://localhost:5173";
 const allowedOrigins = new Set([
     frontendOrigin,
@@ -47,8 +53,13 @@ app.use("/api/user", userRouts);
 app.use("/api/projects", projectRoutes);
 app.use("/api/github", githubRoutes);
 
-app.get("/", (req, res) => {
-    res.send("Hello World");
+// ── Serve the built React app ──────────────────────────
+const frontendDistPath = path.join(__dirname, "../../Frontend/dist");
+app.use(express.static(frontendDistPath));
+
+// Any non-/api route → return index.html (SPA client-side routing)
+app.get(/^(?!\/api).*/, (req, res) => {
+    res.sendFile(path.join(frontendDistPath, "index.html"));
 });
 
 export default app;

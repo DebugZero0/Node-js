@@ -2,13 +2,16 @@ import axios from "axios"
 import { store } from "./app.store.js"
 import { setAccessToken, setError, setUser } from "../features/auth/auth.slice.js"
 
+const resolvedBaseUrl = import.meta.env.VITE_API_URL
+  ?? (import.meta.env.PROD ? "" : "http://localhost:3000")
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+    baseURL: resolvedBaseUrl,
     withCredentials: true,
 })
 
 const refreshClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+    baseURL: resolvedBaseUrl,
     withCredentials: true,
 })
 // Interceptor for adding authorization header

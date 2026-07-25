@@ -3,7 +3,7 @@ import ChatModel from "../models/chat.model.js";
 import MessageModel from "../models/message.model.js";
 
 import { getDefaultMessageLimit, isRateLimitEnabled } from "../utils/rateLimiter.js";
-const isProduction = process.env.NODE_ENV === "production" || process.env.NODE_ENV === "development";
+const isProduction = process.env.NODE_ENV === "production";
 
 function refreshCookieOptions() {
     return {

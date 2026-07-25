@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js",
     "dev": "npx nodemon server.js"
   },
   "keywords": [],
@@ -29,10 +30,12 @@
     "multer": "^2.2.0",
     "node-mailjet": "^6.0.11",
     "nodemailer": "^9.0.3",
+    "path": "^0.12.7",
     "pdf-parse": "^2.4.5",
     "react-markdown": "^10.1.0",
     "sharp": "^0.35.3",
     "socket.io": "^4.8.3",
-    "tavily": "^2.0.0"
+    "tavily": "^2.0.0",
+    "url": "^0.11.4"
   }
 }
