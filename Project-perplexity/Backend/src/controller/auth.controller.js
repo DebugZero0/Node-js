@@ -37,7 +37,6 @@ function accessTokenOptions() {
 export const register = async (req, res) => {
     const { username, email, password } = req.body;
     try {
-        // Check if the email or username is already registered
         const existingUser = await User.findOne({ $or: [{ email }, { username }] });
         if (existingUser) {
             return res.status(400).json({
@@ -46,52 +45,41 @@ export const register = async (req, res) => {
                 err: "User already exists"
             });
         }
-        // Create a new user
-        const newUser = new User({ username, email, password });
 
-        // Generate a JWT token
-        const emailVerificationToken = jwt.sign({ email: newUser.email }, process.env.JWT_SECRET, { expiresIn: "1d" });
-        // Send a welcome email
-        if (isProduction) {
-            await sendEmailMailjet(
-                newUser.email,
-                "Welcome to Our App!",
-                `<div style="margin:0;padding:48px 16px;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-                    <div style="max-width:440px;margin:0 auto;background-color:#ffffff;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,0.05);padding:48px 40px;text-align:center;">
-                        <h1 style="margin:0;font-size:22px;font-weight:600;color:#111111;letter-spacing:-0.3px;">Welcome, ${newUser.username}</h1>
-                        <p style="margin:14px 0 0 0;font-size:15px;line-height:1.65;color:#6b6b6b;">
-                        Your account has been created. Please verify your email by clicking the link below:
-                        </p>
-                        <div style="margin-top:28px;">
-                        <a href="${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}" style="display:inline-block;padding:14px 36px;font-size:14px;font-weight:600;color:#ffffff;background-color:#111111;border:1px solid #111111;text-decoration:none;border-radius:999px;">
-                            Verify Email
-                        </a>
-                        </div>
-                    </div>
-                </div>`
-            );
-        }
-        else {
-            await sendEmail(
-                newUser.email,
-                "Welcome to Our App!",
-                `<div style="margin:0;padding:48px 16px;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-                    <div style="max-width:440px;margin:0 auto;background-color:#ffffff;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,0.05);padding:48px 40px;text-align:center;">
-                        <h1 style="margin:0;font-size:22px;font-weight:600;color:#111111;letter-spacing:-0.3px;">Welcome, ${newUser.username}</h1>
-                        <p style="margin:14px 0 0 0;font-size:15px;line-height:1.65;color:#6b6b6b;">
-                        Your account has been created. Please verify your email by clicking the link below:
-                        </p>
-                        <div style="margin-top:28px;">
-                        <a href="${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}" style="display:inline-block;padding:14px 36px;font-size:14px;font-weight:600;color:#ffffff;background-color:#111111;border:1px solid #111111;text-decoration:none;border-radius:999px;">
-                            Verify Email
-                        </a>
-                        </div>
-                    </div>
-                </div>`
-            );
-        }
-        
+        const newUser = new User({
+            username,
+            email,
+            password, 
+            expiresAt: new Date(Date.now() + 5 * 60 * 1000), // explicit, one-time
+        });
+
         await newUser.save();
+
+        const emailVerificationToken = jwt.sign({ email: newUser.email }, process.env.JWT_SECRET, { expiresIn: "1d" });
+        const html = `<div style="margin:0;padding:48px 16px;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+            <div style="max-width:440px;margin:0 auto;background-color:#ffffff;border-radius:20px;box-shadow:0 2px 10px rgba(0,0,0,0.05);padding:48px 40px;text-align:center;">
+                <h1 style="margin:0;font-size:22px;font-weight:600;color:#111111;letter-spacing:-0.3px;">Welcome, ${newUser.username}</h1>
+                <p style="margin:14px 0 0 0;font-size:15px;line-height:1.65;color:#6b6b6b;">
+                Your account has been created. Please verify your email by clicking the link below:
+                </p>
+                <div style="margin-top:28px;">
+                <a href="${backendUrl}/api/auth/verify-email?token=${emailVerificationToken}" style="display:inline-block;padding:14px 36px;font-size:14px;font-weight:600;color:#ffffff;background-color:#111111;border:1px solid #111111;text-decoration:none;border-radius:999px;">
+                    Verify Email
+                </a>
+                </div>
+            </div>
+        </div>`;
+
+        try {
+            if (isProduction) {
+                await sendEmailMailjet(newUser.email, "Welcome to Our App!", html);
+            } else {
+                await sendEmail(newUser.email, "Welcome to Our App!", html);
+            }
+        } catch (emailError) {
+            console.error("Failed to send welcome email:", emailError.message);
+        }
+
         res.status(201).json({
             message: "User registered successfully. Please check your email for a welcome message.",
             success: true,

@@ -11,14 +11,11 @@ const userSchema = new mongoose.Schema(
 		githubAccessToken: { type: String, default: null, select: false },
 		githubUsername: { type: String, default: null },
 		githubConnectedAt: { type: Date, default: null },
-
-		// auto-purge unverified signups after 24h; cleared once verified
 		expiresAt: {
 			type: Date,
-			default: () => new Date(Date.now() + 24 * 60 * 60 * 1000),
+			default: null,
 		},
 
-		// used by the message rate limiter below
 		messageCount: { type: Number, default: 0 },
 		messageLimit: { type: Number, default: 20 },
 		storageLimit: { type: Number, default: 10 * 1024 * 1024 }, // 10MB default
@@ -28,7 +25,7 @@ const userSchema = new mongoose.Schema(
 
 userSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-// Hash the password before saving the user
+
 userSchema.pre("save", async function () {
 	if (!this.isModified("password")) {
 		return;
@@ -37,13 +34,7 @@ userSchema.pre("save", async function () {
 	const salt = await bcrypt.genSalt(10);
 	this.password = await bcrypt.hash(this.password, salt);
 });
-userSchema.pre("save", function () {
-    if (this.verified) {
-        this.expiresAt = undefined;
-    }
-});
 
-// Method to compare candidate password with the stored hashed password
 userSchema.methods.comparePassword = function (candidatePassword) {
 	return bcrypt.compare(candidatePassword, this.password);
 };

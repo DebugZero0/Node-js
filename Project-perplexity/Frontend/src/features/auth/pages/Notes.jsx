@@ -6,6 +6,7 @@ const Notes = () => {
         <h1 className="text-2xl font-bold text-center text-[#31b8c6] mt-10">Thanks for registering!</h1>
         <p className="text-center text-sm text-zinc-300 mt-4">Please check your email for a welcome message and verification link.</p>
         <p className="text-center text-sm text-zinc-300 mt-2">Once you verify your email, you can log in and start chatting!</p>
+        <p className="text-center text-sm text-zinc-300 mt-4">Please verify within 5 minutes.</p>
     </div>
   )
 }
