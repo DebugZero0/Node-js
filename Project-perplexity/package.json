@@ -2,7 +2,7 @@
   "name": "project-perplexity-root",
   "private": true,
   "scripts": {
-    "build": "cd Frontend && npm install && npm run build && cd ../Backend && npm install",
+    "build": "cd Frontend && npm install --include=dev && npm run build && cd ../Backend && npm install",
     "start": "node Backend/server.js"
   }
 }
