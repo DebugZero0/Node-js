@@ -34,19 +34,15 @@ userSchema.pre("save", async function () {
 		return;
 	}
 
-	try {
-		const salt = await bcrypt.genSalt(10);
-		this.password = await bcrypt.hash(this.password, salt);
-	} catch (error) {
-		next(error);
-	}
+	const salt = await bcrypt.genSalt(10);
+	this.password = await bcrypt.hash(this.password, salt);
 });
-userSchema.pre("save", function (next) {
+userSchema.pre("save", function () {
     if (this.verified) {
         this.expiresAt = undefined;
     }
-    next();
 });
+
 // Method to compare candidate password with the stored hashed password
 userSchema.methods.comparePassword = function (candidatePassword) {
 	return bcrypt.compare(candidatePassword, this.password);

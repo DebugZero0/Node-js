@@ -83,7 +83,10 @@ export default function ProjectModal({ open, onClose, selectedProjectId, onSelec
         if (!open) return
         const hasIndexing = projects.some((p) => p.status === "indexing")
         if (hasIndexing && !pollRef.current) {
-            pollRef.current = setInterval(loadProjects, 3000)
+            pollRef.current = setInterval(() => {
+                loadProjects()
+                loadStorageQuota()
+            }, 3000)
         }
         if (!hasIndexing && pollRef.current) {
             clearInterval(pollRef.current)
@@ -92,7 +95,7 @@ export default function ProjectModal({ open, onClose, selectedProjectId, onSelec
         return () => {
             if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null }
         }
-    }, [open, projects, loadProjects])
+    }, [open, projects, loadProjects, loadStorageQuota])
 
     if (!open) return null
 

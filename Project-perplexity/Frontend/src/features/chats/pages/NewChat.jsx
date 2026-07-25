@@ -1,5 +1,5 @@
 import React from 'react'
-import { ArrowLeftIcon } from '@heroicons/react/24/outline'
+import { ArrowLeftIcon ,SparklesIcon} from '@heroicons/react/24/outline'
 import { Mic, MicOff } from 'lucide-react'
 import { CloseIcon, PaperclipIcon } from '../components/IconFunction'
 
@@ -22,7 +22,10 @@ const NewChat = ({
     return (
         <div className="flex min-h-[50vh] w-full items-center justify-center px-3 sm:min-h-[55vh] sm:px-4">
             <div className="flex w-full max-w-2xl flex-col items-center justify-center gap-2 text-center lg:max-w-3xl">
-                <h3 className="text-xl font-semibold text-white sm:text-2xl lg:text-3xl">Ask anything</h3>
+              <div className="flex items-center gap-5 text-zinc-400">
+                <SparklesIcon className="h-5 w-5" />
+                <h3 className="text-2xl font-semibold text-white sm:text-3xl lg:text-3xl">Ask anything</h3>
+                </div>
                 <p className="mt-2 text-sm leading-6 text-zinc-500">
                     Pick a chat from the sidebar or start a new one.
                 </p>
