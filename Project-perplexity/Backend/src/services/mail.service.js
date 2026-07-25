@@ -5,38 +5,37 @@ import axios from 'axios';
 
 dotenv.config();
 
-// connection between web server and SMTP server to send emails
-const transporter = nodemailer.createTransport({
-    service: "Gmail",
-    auth: {
-        type: "OAuth2",
-        user: process.env.GOOGLE_USER,
-        clientId: process.env.GOOGLE_CLIENT_ID,
-        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
-    },
-});
+const isProduction = process.env.NODE_ENV === "production";
 
-// Verify the transporter configuration
-transporter.verify((error, success) => {
-    if (error) {
-        console.error("Error setting up email transporter:", error);
-    }
-    else {
-        console.log("Email transporter is ready to send messages ✅");
-    }
-});
+let transporter = null;
 
-// Function to send an email using Nodemailer
+if (!isProduction) {
+    transporter = nodemailer.createTransport({
+        service: "Gmail",
+        auth: {
+            type: "OAuth2",
+            user: process.env.GOOGLE_USER,
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+        },
+    });
+
+    transporter.verify((error, success) => {
+        if (error) {
+            console.error("Error setting up email transporter:", error);
+        } else {
+            console.log("Email transporter is ready to send messages ✅");
+        }
+    });
+}
+
 export const sendEmail = async (to, subject, html, text) => {
-    const mailOptions = {
-        from: process.env.GOOGLE_USER,
-        to,
-        subject,
-        html,
-        text,
-    };
-    const details= await transporter.sendMail(mailOptions);
+    if (!transporter) {
+        throw new Error("Nodemailer transporter is not initialized (production uses Mailjet instead).");
+    }
+    const mailOptions = { from: process.env.GOOGLE_USER, to, subject, html, text };
+    const details = await transporter.sendMail(mailOptions);
     console.log("Email sent:", details);
     return details;
 };
