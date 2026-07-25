@@ -7,6 +7,7 @@ import { Send,Mic,MicOff } from "lucide-react"
 import { useAuth } from "../../auth/hooks/useAuth"
 import { useUser } from "../hooks/useUser"
 import ProjectModal from "../../projects/components/ProjectModel.jsx"
+import NewChat from "./NewChat.jsx"
 
 import {
   SparklesIcon,
@@ -627,11 +628,27 @@ function resizeInputHeight() {
   const minHeight = 32
   const maxHeight = 160
 
+  // Remember the height as currently rendered (before this resize)
+  const previousHeight = inputElement.style.height
+
+  // Disable any CSS transition while we measure, so the temporary
+  // reset below never gets treated as the transition's start point
+  const previousTransition = inputElement.style.transition
+  inputElement.style.transition = "none"
+
   // Reset height before measuring
   inputElement.style.height = `${minHeight}px`
 
   // Measure content
   const scrollHeight = inputElement.scrollHeight
+
+  // Put the box back to its previous height (still untransitioned),
+  // so re-enabling the transition below has an honest starting point
+  inputElement.style.height = previousHeight
+  // Force the browser to commit that before we turn transitions back on
+  void inputElement.offsetHeight
+
+  inputElement.style.transition = previousTransition
 
   // Calculate new height
   const newHeight = Math.min(
@@ -639,6 +656,8 @@ function resizeInputHeight() {
     maxHeight
   )
 
+  // Apply the real target height now, with transitions active again,
+  // so it animates from the true previous height to the new one
   inputElement.style.height = `${newHeight}px`
 
   // Enable scrolling only after max height
@@ -652,6 +671,14 @@ useEffect(() => {
   inputElement.style.height = "32px"
   inputElement.style.overflowY = "hidden"
 }, [])
+
+useEffect(() => {
+  const id = requestAnimationFrame(() => {
+    resizeInputHeight()
+  })
+
+  return () => cancelAnimationFrame(id)
+}, [inputValue])
 
   function openChatSearch() {
     setDrawerOpen(true)
@@ -1585,7 +1612,7 @@ function removeAttachment(id) {
 
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex min-h-0 flex-1 flex-col">
-              <div className="scrollbar-chat min-h-0 flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 pt-1 pb-35">
+              <div className={`scrollbar-chat min-h-0 flex-1 overflow-y-auto px-3 sm:px-6 lg:px-8 pt-1 ${messages.length > 0 ? "pb-35" : "pb-2"}`}>
                 <div className="mx-auto w-full max-w-3xl">
                   {error ? (
                     <div className="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/[0.06] px-4 py-3 text-sm text-rose-300">
@@ -1596,24 +1623,22 @@ function removeAttachment(id) {
                   {loadingMessages ? (
                     <MessageSkeletonList />
                   ) : messages.length === 0 ? (
-                    <div className="flex min-h-[50vh] items-center justify-center sm:min-h-[55vh]">
-                      <div className="max-w-md text-center">
-                        <h3 className="text-xl font-semibold text-white sm:text-2xl lg:text-3xl">Ask anything</h3>
-                        <p className="mt-2 text-sm leading-6 text-zinc-500">
-                          Pick a chat from the sidebar or start a new one.
-                        </p>
-                        <div className="mt-6 flex flex-wrap justify-center gap-2 sm:gap-3">
-                          {["MERN Stack", "LangChain", "WebRTC", "AI Integration"].map((item) => (
-                            <button
-                              key={item}
-                              className="rounded-full border border-white/10 bg-white/[0.03] px-3.5 py-2 text-xs text-zinc-300 transition hover:bg-white/10 sm:px-4 sm:text-sm"
-                            >
-                              {item}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
+                    <NewChat
+                      formRef={formRef}
+                      dockedInputRef={dockedInputRef}
+                      attachmentInputRef={attachmentInputRef}
+                      inputValue={inputValue}
+                      setInputValue={setInputValue}
+                      sendingMessage={sendingMessage}
+                      pendingAttachments={pendingAttachments}
+                      handleSendMessage={handleSendMessage}
+                      handleFilesSelected={handleFilesSelected}
+                      removeAttachment={removeAttachment}
+                      triggerAttachmentPicker={triggerAttachmentPicker}
+                      resizeInputHeight={resizeInputHeight}
+                      isListening={isListening}
+                      toggleListening={toggleListening}
+                    />
                   ) : (
                     <div className="flex flex-col gap-4">
                       {messages.map((message) => {
@@ -1691,6 +1716,7 @@ function removeAttachment(id) {
               </div>
 
               {/* Composer */}
+              { messages.length > 0 && (
               <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-shrink-0 justify-center px-3 py-3 backdrop-blur-xl sm:px-6 sm:pt-2 sm:pb-4 lg:px-8">
                             <form onSubmit={handleSendMessage} ref={formRef} className="w-xl max-w-xl p-0 sm:max-w-2xl sm:p-1 lg:max-w-3xl">
                               {pendingAttachments.length > 0 && (
@@ -1738,7 +1764,7 @@ function removeAttachment(id) {
                                         value={inputValue}
                                         onChange={(event) => {
                                           setInputValue(event.target.value)
-                                          resizeInputHeight()
+                                          // resizeInputHeight()
                                         }}
                                         onKeyDown={(event) => {
                                           if (
@@ -1752,7 +1778,7 @@ function removeAttachment(id) {
                                           }
                                         }}
                                         placeholder="Write a message..."
-                                        className="box-border h-8 min-h-8 max-h-[160px] w-full resize-none rounded-xl bg-transparent px-3 pt-3 pb-0 text-sm leading-5 text-zinc-100 placeholder:text-zinc-500 focus:outline-none sm:text-base scrollbar-thin scrollbar-thumb-zinc-500/30 scrollbar-track-transparent"
+                                        className="box-border h-8 min-h-8 max-h-[160px] w-full resize-none rounded-xl bg-transparent px-3 pt-3 pb-0 text-sm leading-5 text-zinc-100 placeholder:text-zinc-500 focus:outline-none sm:text-base scrollbar-none transition-[height] duration-250 ease-in-out"
                                       />
                                   </div>
                                 {/* icons and buttons */}
@@ -1802,6 +1828,7 @@ function removeAttachment(id) {
                               </div>
                             </form>
               </div>
+              )}
             </div>
           </div>
         </section>
