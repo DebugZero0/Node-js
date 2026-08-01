@@ -209,6 +209,12 @@ const Register = () => {
             >
               {loading ? 'Creating account…' : 'Create account'}
             </button>
+            <a
+              href="api/auth/google"
+              className="w-full inline-flex items-center justify-center rounded-xl bg-[#fff] text-[#000] text-sm font-medium py-3 mt-1 transition-colors hover:bg-[#f3f1f8] focus:outline-none focus:ring-2 focus:ring-[#863bff] focus:ring-offset-2 focus:ring-offset-[#0b0b10]"
+            >
+              Sign up with Google
+            </a>
           </form>
 
           <p className="text-center text-xs sm:text-sm text-[#8e8a9b] mt-4 sm:mt-5">
