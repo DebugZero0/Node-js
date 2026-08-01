@@ -10,9 +10,9 @@ async function SendTokenResponse(user,res,message,status) {
         role: user.role,
     };
 
-    res.cookie("token",token)
-
     const token = jwt.sign(payload, config.JWT_SECRET, { expiresIn: '7d' });
+    
+    res.cookie("token",token)
     res.send({
         token,
         user: {
@@ -37,6 +37,23 @@ export const register = async (req, res) => {
         }
         const newUser = await userModel.create({ email, password, contact, fullName, role: isSeller ? "seller" : "buyer" });
         await SendTokenResponse(newUser,res,"user registered successfully",201);
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+export const login = async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await userModel.findOne({ email });
+        if (!user) {
+            return res.status(400).json({ message: "Invalid email" });
+        }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Invalid password" });
+        }
+        await SendTokenResponse(user,res,"login successful",200);
     } catch (error) {
         res.status(500).json({ message: "Internal server error" });
     }
