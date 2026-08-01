@@ -6,11 +6,14 @@ import { Navigate } from "react-router-dom";
 export const routes = createBrowserRouter([
     {
         path: "/",
-        element: <Register />
+        element: 
+        <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-r from-[#1e1b2c] to-[#2c2a3c]">
+            <h1 className="text-3xl font-bold text-white">Welcome to the App</h1>
+        </div>
     },
     {
         path: "/register",
-        element: <Navigate to="/" replace = { true } />
+        element: <Register />
     },
     {
         path: "/login",

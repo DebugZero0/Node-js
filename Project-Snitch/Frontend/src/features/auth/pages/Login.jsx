@@ -5,6 +5,7 @@ import { useAuth } from '../hook/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { Eye, EyeOff } from 'lucide-react'
 import { clearError } from '../state/auth.slice.js' 
+import GoogleBtn from '../Components/GoogleBtn.jsx'
 
 const Login = () => {
   const { handleLogin } = useAuth()
@@ -94,11 +95,15 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-full bg-white py-3 text-sm font-medium text-black transition-opacity hover:opacity-90 disabled:opacity-50"
+            className="w-full rounded-xl bg-violet-500 py-3 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+
+        <div className="mt-8">
+          <GoogleBtn />
+        </div>
 
         <p className="mt-12 text-center text-sm text-neutral-500">
           Don't have an account?{' '}
