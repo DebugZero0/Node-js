@@ -6,6 +6,7 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import cors from 'cors';
 import authRoutes from './routes/auth.routes.js';
+import productRoutes from './routes/product.routes.js';
 import { Strategy as GoogleStrategy } from "passport-google-oauth20"
 import {config} from './config/config.js';
 import passport from 'passport';
@@ -31,5 +32,6 @@ passport.use(new GoogleStrategy({
 }));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
 
 export default app;
