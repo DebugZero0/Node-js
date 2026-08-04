@@ -1,21 +1,22 @@
 import productModel from "../models/product.model.js";
-import {uploadFile} from "../services/storage.service.js"
+import { uploadFile } from "../services/storage.service.js"
 
 export async function createProduct(req, res) {
     try {
-        const { title, description, priceAmount , priceCurrency } = req.body;
+        const { title, description, priceAmount, priceCurrency } = req.body;
         const seller = req.user;
-        const images = await Promise.all(req.files.map(async (file) => {
-            return await uploadFile({
-                buffer: file.buffer,
-                fileName: file.originalname,
-            });
-
-        }));
+        const images = await Promise.all(
+            (req.files || []).map(async (file) => {
+                return await uploadFile({
+                    buffer: file.buffer,
+                    fileName: file.originalname,
+                });
+            })
+        );
         const product = await productModel.create({
             title,
             description,
-            price:{
+            price: {
                 amount: priceAmount,
                 currency: priceCurrency || "INR"
             },
@@ -28,6 +29,23 @@ export async function createProduct(req, res) {
             product
         });
     } catch (error) {
-        res.status(500).json({ message: "Error creating product", error });
+        console.error(error);
+        res.status(500).json({ message: "Error creating product", error: error.message });
+    }
+}
+
+export async function getSellerProducts(req, res) {
+    try {
+        const seller = req.user;
+        const products = await productModel.find({ seller: seller._id });
+        res.status(200).json({
+            message: "Products fetched successfully",
+            success: true,
+            products
+        });
+    }
+    catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error fetching products", error: error.message });
     }
 }

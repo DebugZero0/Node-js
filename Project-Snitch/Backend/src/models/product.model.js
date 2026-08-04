@@ -14,7 +14,7 @@ const productSchema = new mongoose.Schema({
         ref: 'user',
         required: true
     },
-    price:{
+    price: {
         amount: {
             type: Number,
             required: true,
@@ -22,7 +22,7 @@ const productSchema = new mongoose.Schema({
         currency: {
             type: String,
             required: true,
-            enum: ['USD', 'EUR', 'GBP','INR' ],
+            enum: ['USD', 'EUR', 'GBP', 'INR'],
             default: 'INR',
         }
     },
@@ -34,7 +34,7 @@ const productSchema = new mongoose.Schema({
             }
         }
     ]
-},{timestamps: true});
+}, { timestamps: true });
 
 const productModel = mongoose.model('product', productSchema);
 export default productModel;

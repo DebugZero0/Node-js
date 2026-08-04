@@ -8,8 +8,8 @@ const client = new ImageKit({
 
 export async function uploadFile({buffer, fileName, folder='snitch'}) {
   try {
-    const result = await client.file.upload({
-        file: await ImageKit.toFile(buffer),
+    const result = await client.files.upload({
+        file: await ImageKit.toFile(buffer, fileName),
         fileName,
         folder
     });

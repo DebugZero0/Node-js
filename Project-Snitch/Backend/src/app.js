@@ -8,7 +8,7 @@ import cors from 'cors';
 import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
 import { Strategy as GoogleStrategy } from "passport-google-oauth20"
-import {config} from './config/config.js';
+import { config } from './config/config.js';
 import passport from 'passport';
 
 const app = express();
@@ -27,7 +27,7 @@ passport.use(new GoogleStrategy({
   clientID: config.GOOGLE_CLIENT_ID,
   clientSecret: config.GOOGLE_CLIENT_SECRET,
   callbackURL: "/api/auth/google/callback"
-},(accessToken, refreshToken, profile, done) => {
+}, (accessToken, refreshToken, profile, done) => {
   return done(null, profile);
 }));
 
