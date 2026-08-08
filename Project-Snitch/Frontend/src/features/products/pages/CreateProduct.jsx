@@ -1,8 +1,10 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { useProduct } from '../hook/useProduct.js';
+import { useNavigate } from 'react-router-dom';
 
 const CreateProduct = () => {
   const { handleCreateProduct } = useProduct();
+  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -67,6 +69,7 @@ const CreateProduct = () => {
       setError(err?.message || 'Failed to create product. Please try again.');
     } finally {
       setIsSubmitting(false);
+      navigate('/seller/dashboard');
     }
   };
 

@@ -183,23 +183,37 @@ const Register = () => {
               }
             />
 
-            <label className="flex items-center gap-2.5 pt-0.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                name="isSeller"
-                checked={form.isSeller}
-                onChange={onChange}
-                className="peer sr-only"
-              />
-              <span className="h-[18px] w-[18px] shrink-0 rounded-md border border-white/15 bg-white/5 flex items-center justify-center transition-colors peer-checked:bg-[#863bff] peer-checked:border-[#863bff]">
-                <svg className="h-2.5 w-2.5 text-white opacity-0 peer-checked:opacity-100" viewBox="0 0 12 10" fill="none">
-                  <path d="M1 5L4.5 8.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              name="isSeller"
+              checked={form.isSeller}
+              onChange={onChange}
+              className="sr-only"
+            />
+
+            <span className="flex h-[18px] w-[18px] items-center justify-center rounded-md border border-white/20">
+              {form.isSeller && (
+                <svg
+                  className="h-3 w-3 text-[#863bff]"
+                  viewBox="0 0 12 10"
+                  fill="none"
+                >
+                  <path
+                    d="M1 5L4.5 8.5L11 1.5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
-              </span>
-              <span className="text-xs sm:text-sm text-[#c9c5d4]">
-                I'm signing up as a seller
-              </span>
-            </label>
+              )}
+            </span>
+
+            <span className="text-sm text-[#c9c5d4]">
+              I'm signing up as a seller
+            </span>
+          </label>
 
             {error && <p className="text-xs sm:text-sm text-[#ff6b6b]">{error}</p>}
 

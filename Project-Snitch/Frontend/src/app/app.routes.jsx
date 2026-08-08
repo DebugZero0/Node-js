@@ -3,6 +3,7 @@ import Register from "../features/auth/pages/Register";
 import Login from "../features/auth/pages/Login";
 import CreateProduct from "../features/products/pages/CreateProduct";
 import { Navigate } from "react-router-dom";
+import Dashboard from "../features/products/pages/Dashboard";
 
 export const routes = createBrowserRouter([
     {
@@ -21,7 +22,16 @@ export const routes = createBrowserRouter([
         element: <Login />
     },
     {
-        path:"/seller/create",
-        element: <CreateProduct />
+        path:"/seller",
+        children: [
+            {
+                path: "/seller/create-product",
+                element: <CreateProduct />
+            },
+            {
+                path: "/seller/dashboard",
+                element:<Dashboard />
+            }
+        ]
     }
 ])
